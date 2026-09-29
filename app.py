@@ -30,22 +30,31 @@ else:
     if 'current_client' not in st.session_state:
         st.session_state.current_client = ""
 
+    # 사이드바 메뉴 디자인 개선
+    st.sidebar.markdown("### 👓 REPUBLICA B2B")
+    st.sidebar.markdown("---")
     menu = st.sidebar.radio("메뉴 이동", ["새주문 (시작)", "장바구니 / 임시저장", "주문서 현황"])
+    
+    # 사이드바에 현재 담긴 장바구니 요약 실시간 표시
+    if len(st.session_state.cart) > 0:
+        st.sidebar.markdown("---")
+        st.sidebar.info(f"🛒 장바구니 품목: **{len(st.session_state.cart)}개**")
 
     if menu == "새주문 (시작)":
         st.title("👓 REPUBLICA B2B 주문 시스템")
-        st.write("거래처 안경원 이름을 입력하고 여러 모델의 컬러와 수량을 자유롭게 담아보세요.")
+        st.markdown("거래처 안경원 이름을 입력하고 원하는 모델과 컬러 수량을 자유롭게 담아보세요.")
         
-        # 1. 거래처 입력
+        # 1. 거래처 입력 영역
+        st.markdown("#### 1️⃣ 거래처 정보")
         client_name = st.text_input("거래처 안경원 이름", value=st.session_state.current_client, placeholder="예: 글라스안경 세곡점")
         
         if client_name.strip() != "":
             st.session_state.current_client = client_name
 
-        st.divider()
+        st.markdown("---")
         
-        # 2. 모델 선택
-        st.subheader("📋 제품 모델 선택")
+        # 2. 모델 선택 영역
+        st.markdown("#### 2️⃣ 제품 모델 선택")
         model_col = df_models.columns[0]
         model_list = df_models[model_col].dropna().astype(str).tolist()
         selected_model_name = st.selectbox("주문할 모델을 선택하세요", model_list)
@@ -57,48 +66,49 @@ else:
         except:
             unit_price = 33000
             
-        st.info(f"선택 모델: **{selected_model_name}** | 공급 단가: ₩ {unit_price:,}")
+        # 선택된 모델 정보 박스 강조
+        st.success(f"📌 **선택 모델:** {selected_model_name} &nbsp;&nbsp;|&nbsp;&nbsp; 💵 **공급 단가:** ₩ {unit_price:,}")
 
-        # [스마트 매칭 로직] 선택한 모델명에서 순수 영문 코드 추출 (예: 'REP401TENON(테논)' -> 'REP401TENON')
+        # 스마트 매칭 로직
         clean_selected_model = selected_model_name.split('(')[0].strip().upper()
-
         color_model_col = df_colors.columns[0]
         
-        # 컬러 시트의 모델명들도 동일하게 정제해서 비교
         matched_colors_df = df_colors[
             df_colors[color_model_col].astype(str)
             .apply(lambda x: x.split('(')[0].strip().upper() == clean_selected_model)
         ]
 
         if matched_colors_df.empty:
-            # 만약 위 매칭이 안 되면 전체 문자열 포함 여부로 한 번 더 유연하게 검색
             matched_colors_df = df_colors[
                 df_colors[color_model_col].astype(str)
                 .apply(lambda x: clean_selected_model in x.upper() or x.upper() in clean_selected_model)
             ]
 
         if matched_colors_df.empty:
-            st.warning(f"⚠️ '{selected_model_name}' 모델에 매칭되는 컬러 정보를 찾지 못했습니다. (color 탭의 첫 번째 열 모델명 표기를 확인해 주세요)")
+            st.warning(f"⚠️ '{selected_model_name}' 모델에 매칭되는 컬러 정보를 찾지 못했습니다.")
         else:
+            st.markdown("#### 3️⃣ 컬러별 수량 선택")
+            st.markdown("<small style='color: gray;'>원하시는 컬러에 체크하시면 수량이 기본 1개로 설정되며, 필요시 조정할 수 있습니다.</small>", unsafe_allow_html=True)
+            
             with st.form(key=f"multi_color_form_{selected_model_name}"):
-                st.write("원하시는 컬러를 **체크박스로 선택**하시면 기본 1개로 담기며, 수량을 조정하실 수 있습니다:")
-                
                 color_inputs = []
                 for idx, row in matched_colors_df.iterrows():
                     col_code = str(row.iloc[1]) if len(row) > 1 else ""
                     col_name = str(row.iloc[2]) if len(row) > 2 else ""
                     color_label = f"{col_code} / {col_name}".strip(" /")
                     
-                    c1, c2 = st.columns([2, 1])
+                    # 깔끔한 열 정렬
+                    c1, c2 = st.columns([3, 1])
                     with c1:
-                        is_checked = st.checkbox(f"{color_label}", key=f"chk_{clean_selected_model}_{idx}")
+                        is_checked = st.checkbox(f"**{color_label}**", key=f"chk_{clean_selected_model}_{idx}")
                     with c2:
                         qty = st.number_input("수량", min_value=1, max_value=100, value=1, step=1, key=f"qty_{clean_selected_model}_{idx}", label_visibility="collapsed")
                     
                     if is_checked:
                         color_inputs.append({"컬러": color_label, "수량": qty})
                 
-                submitted = st.form_submit_button("🛒 장바구니에 담고 다른 모델 계속 담기", use_container_width=True)
+                st.markdown("")
+                submitted = st.form_submit_button("🛒 선택한 품목 장바구니에 담기", use_container_width=True, type="primary")
                 
                 if submitted:
                     if not st.session_state.current_client:
@@ -115,28 +125,29 @@ else:
                                 "단가": unit_price,
                                 "금액": item["수량"] * unit_price
                             })
-                        st.success(f"🎉 **{selected_model_name}** 모델이 장바구니에 담겼습니다! 위에서 다른 모델을 골라 계속 담으실 수 있습니다.")
+                        st.success(f"🎉 **{selected_model_name}** 발주 내역이 장바구니에 안전하게 담겼습니다! 다른 모델도 이어서 선택해 보세요.")
 
         # 현재까지 담긴 장바구니 요약 미리보기
         if len(st.session_state.cart) > 0:
-            st.divider()
-            st.markdown(f"### 🛒 현재 담긴 장바구니 (총 {len(st.session_state.cart)}개 품목)")
+            st.markdown("---")
+            st.markdown(f"### 🛒 현재 장바구니 현황 (총 {len(st.session_state.cart)}개 품목)")
             temp_cart_df = pd.DataFrame(st.session_state.cart)
             st.dataframe(temp_cart_df[["모델명", "컬러", "수량", "금액"]], use_container_width=True)
 
     elif menu == "장바구니 / 임시저장":
         st.title("🛒 장바구니 및 임시저장")
-        st.write(f"현재 거래처: **{st.session_state.current_client or '지정되지 않음'}**")
+        st.markdown(f"현재 거래처: **{st.session_state.current_client or '지정되지 않음'}**")
         
         if len(st.session_state.cart) > 0:
             cart_df = pd.DataFrame(st.session_state.cart)
             st.dataframe(cart_df, use_container_width=True)
             total_price = cart_df["금액"].sum()
-            st.markdown(f"### 💰 총 주문 금액: ₩ {total_price:,}")
+            st.markdown(f"### 💰 총 주문 금액: **₩ {total_price:,}**")
             
+            st.markdown("")
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("임시저장 (Draft)", use_container_width=True):
+                if st.button("💾 임시저장 (Draft)", use_container_width=True):
                     st.session_state.drafts.append({
                         "거래처": st.session_state.current_client,
                         "시간": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -146,11 +157,11 @@ else:
                     st.success("임시저장되었습니다.")
                     st.session_state.cart = []
             with col2:
-                if st.button("최종 주문 완료 (발주 전송)", type="primary", use_container_width=True):
+                if st.button("🚀 최종 주문 완료 (발주 전송)", type="primary", use_container_width=True):
                     st.success("주문이 성공적으로 전송되었습니다!")
                     st.session_state.cart = []
         else:
-            st.info("장바구니가 비어 있습니다.")
+            st.info("장바구니가 비어 있습니다. '새주문' 메뉴에서 제품을 담아주세요.")
 
     elif menu == "주문서 현황":
         st.title("📊 주문서 현황")
