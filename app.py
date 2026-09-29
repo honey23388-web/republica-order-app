@@ -9,7 +9,6 @@ SHEET_ID = "1FiP0FFJI8OdswJa_p6ejkOpLZGbVZx9j71UUSJ6zLN4"
 @st.cache_data(ttl=60)
 def load_data():
     try:
-        # 영문 탭 이름(model, color)으로 안정적으로 CSV 호출
         model_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=model"
         color_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=color"
         
@@ -22,7 +21,7 @@ def load_data():
 df_models, df_colors = load_data()
 
 if df_models is None or df_colors is None or df_models.empty:
-    st.error("⚠️ 구글 시트 데이터를 불러오는 데 실패했습니다. 1) 탭 이름이 'model', 'color'로 되어 있는지, 2) 링크 공유가 '뷰어'로 열려 있는지 확인해 주세요.")
+    st.error("⚠️ 구글 시트 데이터를 불러오는 데 실패했습니다. 탭 이름과 공유 설정을 확인해 주세요.")
 else:
     if 'cart' not in st.session_state:
         st.session_state.cart = []
@@ -35,25 +34,20 @@ else:
 
     if menu == "새주문 (시작)":
         st.title("👓 REPUBLICA B2B 주문 시스템")
-        st.write("거래처 안경원 이름을 입력하고 실시간 제품을 확인하세요.")
+        st.write("거래처 안경원 이름을 입력하고 여러 모델의 컬러와 수량을 자유롭게 담아보세요.")
         
+        # 1. 거래처 입력
         client_name = st.text_input("거래처 안경원 이름", value=st.session_state.current_client, placeholder="예: 글라스안경 세곡점")
         
-        if st.button("주문서 작성 시작", type="primary", use_container_width=True):
-            if client_name.strip() == "":
-                st.warning("거래처 안경원 이름을 입력해주세요!")
-            else:
-                st.session_state.current_client = client_name
-                st.success(f"'{client_name}'님의 주문을 시작합니다! 아래 모델을 선택해 주세요.")
-                
+        if client_name.strip() != "":
+            st.session_state.current_client = client_name
+
         st.divider()
-        st.subheader("📋 실시간 모델 목록")
-        st.dataframe(df_models, use_container_width=True)
         
-        st.markdown("### 🛒 모델별 다중 컬러 수량 담기")
-        
+        # 2. 모델 선택
+        st.subheader("📋 제품 모델 선택")
         model_col = df_models.columns[0]
-        selected_model_name = st.selectbox("주문할 모델 선택", df_models[model_col].dropna().tolist())
+        selected_model_name = st.selectbox("주문할 모델을 선택하세요", df_models[model_col].dropna().tolist())
         
         model_row = df_models[df_models[model_col] == selected_model_name].iloc[0]
         
@@ -62,35 +56,59 @@ else:
         except:
             unit_price = 33000
             
-        st.info(f"선택 모델: {selected_model_name} | 단가: ₩ {unit_price:,}")
+        st.info(f"선택 모델: **{selected_model_name}** | 공급 단가: ₩ {unit_price:,}")
 
-        with st.form(key="color_form"):
-            st.write("원하시는 컬러별 수량을 입력하세요:")
-            
-            color_options = df_colors.iloc[:, 0].dropna().tolist()
-            
-            quantities = {}
-            for color in color_options:
-                quantities[color] = st.number_input(f"{color} 수량", min_value=0, max_value=100, step=1, key=f"{selected_model_name}_{color}")
+        # 3. 해당 모델의 컬러 목록 필터링
+        color_model_col = df_colors.columns[0]
+        matched_colors_df = df_colors[df_colors[color_model_col].astype(str).str.strip() == str(selected_model_name).strip()]
+
+        if matched_colors_df.empty:
+            st.warning("⚠️ 해당 모델에 등록된 컬러 정보가 없습니다.")
+        else:
+            with st.form(key=f"multi_color_form_{selected_model_name}"):
+                st.write("원하시는 컬러를 **체크박스로 선택**하시면 기본 1개로 담기며, 수량을 조정하실 수 있습니다:")
                 
-            submitted = st.form_submit_button("장바구니에 담기")
-            if submitted:
-                added_any = False
-                for color, qty in quantities.items():
-                    if qty > 0:
-                        st.session_state.cart.append({
-                            "거래처": st.session_state.current_client,
-                            "모델명": selected_model_name,
-                            "컬러": color,
-                            "수량": qty,
-                            "단가": unit_price,
-                            "금액": qty * unit_price
-                        })
-                        added_any = True
-                if added_any:
-                    st.success("장바구니에 성공적으로 담겼습니다!")
-                else:
-                    st.warning("수량을 1개 이상 입력해주세요.")
+                color_inputs = []
+                for idx, row in matched_colors_df.iterrows():
+                    col_code = str(row.iloc[1]) if len(row) > 1 else ""
+                    col_name = str(row.iloc[2]) if len(row) > 2 else ""
+                    color_label = f"{col_code} / {col_name}".strip(" /")
+                    
+                    c1, c2 = st.columns([2, 1])
+                    with c1:
+                        is_checked = st.checkbox(f"{color_label}", key=f"chk_{selected_model_name}_{idx}")
+                    with c2:
+                        # 기본값 1개 설정, 수량 조절 가능
+                        qty = st.number_input("수량", min_value=1, max_value=100, value=1, step=1, key=f"qty_{selected_model_name}_{idx}", label_visibility="collapsed")
+                    
+                    if is_checked:
+                        color_inputs.append({"컬러": color_label, "수량": qty})
+                
+                submitted = st.form_submit_button("🛒 장바구니에 담고 다른 모델 계속 담기", use_container_width=True)
+                
+                if submitted:
+                    if not st.session_state.current_client:
+                        st.error("⚠️ 상단에 거래처 안경원 이름을 먼저 입력해 주세요!")
+                    elif len(color_inputs) == 0:
+                        st.warning("⚠️ 체크박스로 선택된 컬러가 없습니다.")
+                    else:
+                        for item in color_inputs:
+                            st.session_state.cart.append({
+                                "거래처": st.session_state.current_client,
+                                "모델명": selected_model_name,
+                                "컬러": item["컬러"],
+                                "수량": item["수량"],
+                                "단가": unit_price,
+                                "금액": item["수량"] * unit_price
+                            })
+                        st.success(f"🎉 **{selected_model_name}** 모델이 장바구니에 담겼습니다! 위에서 다른 모델을 골라 계속 담으실 수 있습니다.")
+
+        # 현재까지 담긴 장바구니 요약 미리보기
+        if len(st.session_state.cart) > 0:
+            st.divider()
+            st.markdown(f"### 🛒 현재 담긴 장바구니 (총 {len(st.session_state.cart)}개 품목)")
+            temp_cart_df = pd.DataFrame(st.session_state.cart)
+            st.dataframe(temp_cart_df[["모델명", "컬러", "수량", "금액"]], use_container_width=True)
 
     elif menu == "장바구니 / 임시저장":
         st.title("🛒 장바구니 및 임시저장")
@@ -100,7 +118,7 @@ else:
             cart_df = pd.DataFrame(st.session_state.cart)
             st.dataframe(cart_df, use_container_width=True)
             total_price = cart_df["금액"].sum()
-            st.markdown(f"### 총 주문 금액: ₩ {total_price:,}")
+            st.markdown(f"### 💰 총 주문 금액: ₩ {total_price:,}")
             
             col1, col2 = st.columns(2)
             with col1:
