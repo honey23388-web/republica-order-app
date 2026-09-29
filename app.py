@@ -47,9 +47,10 @@ else:
         # 2. 모델 선택
         st.subheader("📋 제품 모델 선택")
         model_col = df_models.columns[0]
-        selected_model_name = st.selectbox("주문할 모델을 선택하세요", df_models[model_col].dropna().tolist())
+        model_list = df_models[model_col].dropna().astype(str).tolist()
+        selected_model_name = st.selectbox("주문할 모델을 선택하세요", model_list)
         
-        model_row = df_models[df_models[model_col] == selected_model_name].iloc[0]
+        model_row = df_models[df_models[model_col].astype(str) == selected_model_name].iloc[0]
         
         try:
             unit_price = int(model_row.iloc[2])
@@ -58,12 +59,26 @@ else:
             
         st.info(f"선택 모델: **{selected_model_name}** | 공급 단가: ₩ {unit_price:,}")
 
-        # 3. 해당 모델의 컬러 목록 필터링
+        # [스마트 매칭 로직] 선택한 모델명에서 순수 영문 코드 추출 (예: 'REP401TENON(테논)' -> 'REP401TENON')
+        clean_selected_model = selected_model_name.split('(')[0].strip().upper()
+
         color_model_col = df_colors.columns[0]
-        matched_colors_df = df_colors[df_colors[color_model_col].astype(str).str.strip() == str(selected_model_name).strip()]
+        
+        # 컬러 시트의 모델명들도 동일하게 정제해서 비교
+        matched_colors_df = df_colors[
+            df_colors[color_model_col].astype(str)
+            .apply(lambda x: x.split('(')[0].strip().upper() == clean_selected_model)
+        ]
 
         if matched_colors_df.empty:
-            st.warning("⚠️ 해당 모델에 등록된 컬러 정보가 없습니다.")
+            # 만약 위 매칭이 안 되면 전체 문자열 포함 여부로 한 번 더 유연하게 검색
+            matched_colors_df = df_colors[
+                df_colors[color_model_col].astype(str)
+                .apply(lambda x: clean_selected_model in x.upper() or x.upper() in clean_selected_model)
+            ]
+
+        if matched_colors_df.empty:
+            st.warning(f"⚠️ '{selected_model_name}' 모델에 매칭되는 컬러 정보를 찾지 못했습니다. (color 탭의 첫 번째 열 모델명 표기를 확인해 주세요)")
         else:
             with st.form(key=f"multi_color_form_{selected_model_name}"):
                 st.write("원하시는 컬러를 **체크박스로 선택**하시면 기본 1개로 담기며, 수량을 조정하실 수 있습니다:")
@@ -76,10 +91,9 @@ else:
                     
                     c1, c2 = st.columns([2, 1])
                     with c1:
-                        is_checked = st.checkbox(f"{color_label}", key=f"chk_{selected_model_name}_{idx}")
+                        is_checked = st.checkbox(f"{color_label}", key=f"chk_{clean_selected_model}_{idx}")
                     with c2:
-                        # 기본값 1개 설정, 수량 조절 가능
-                        qty = st.number_input("수량", min_value=1, max_value=100, value=1, step=1, key=f"qty_{selected_model_name}_{idx}", label_visibility="collapsed")
+                        qty = st.number_input("수량", min_value=1, max_value=100, value=1, step=1, key=f"qty_{clean_selected_model}_{idx}", label_visibility="collapsed")
                     
                     if is_checked:
                         color_inputs.append({"컬러": color_label, "수량": qty})
