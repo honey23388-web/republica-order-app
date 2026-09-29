@@ -31,6 +31,9 @@ else:
         st.session_state.current_client = ""
     if 'step' not in st.session_state:
         st.session_state.step = "input_client"
+    # 예약주문 팝업 승인 대기를 위한 세션 상태
+    if 'pending_reservation_items' not in st.session_state:
+        st.session_state.pending_reservation_items = []
 
     # -------------------------------------------------------------------------
     # 공통 CSS 스타일 주입
@@ -186,7 +189,7 @@ else:
                     st.session_state.step = "goto_cart_tab"
                     st.rerun()
 
-        # [단계 3] 컬러별 수량 선택 및 D열 재고 연동 표시 화면
+        # [단계 3] 컬러별 수량 선택 및 예약주문 분기 처리 화면
         elif st.session_state.step == "select_color":
             st.markdown("""
                 <div class="brand-header">
@@ -203,7 +206,7 @@ else:
                 
             st.markdown("---")
             st.markdown(f"### [{st.session_state.selected_model}] 컬러별 재고 및 수량 지정")
-            st.markdown("<small style='color: gray;'>각 컬러별 재고 수량을 확인하고 체크박스 선택 후 수량을 지정하세요.</small>", unsafe_allow_html=True)
+            st.markdown("<small style='color: gray;'>재고가 0인 제품은 장바구니 담기 시 예약주문 여부를 확인합니다.</small>", unsafe_allow_html=True)
 
             selected_model_name = st.session_state.selected_model
             unit_price = st.session_state.unit_price
@@ -225,61 +228,120 @@ else:
             if matched_colors_df.empty:
                 st.warning(f"⚠️ '{selected_model_name}' 모델에 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
-                with st.form(key=f"multi_color_form_{selected_model_name}"):
-                    color_inputs = []
-                    for idx, row in matched_colors_df.iterrows():
-                        col_code = str(row.iloc[1]) if len(row) > 1 else ""
-                        col_name = str(row.iloc[2]) if len(row) > 2 else ""
-                        color_label = f"{col_code} / {col_name}".strip(" /")
-                        
-                        # D열(인덱스 3)의 재고 수량 정확히 연동
-                        stock_qty = 0
-                        if len(row) > 3:
-                            try:
-                                stock_qty = int(row.iloc[3])
-                            except:
-                                stock_qty = str(row.iloc[3])
-                        
-                        c1, c2 = st.columns([3, 1])
-                        with c1:
-                            st.markdown(f"**{color_label}** &nbsp; <span style='color: #0066cc; font-size: 13px;'>(재고: <b>{stock_qty}개</b>)</span>", unsafe_allow_html=True)
-                            is_checked = st.checkbox("선택", key=f"chk_{clean_selected_model}_{idx}", label_visibility="collapsed")
-                        with c2:
-                            qty = st.number_input("수량", min_value=1, max_value=100, value=1, step=1, key=f"qty_{clean_selected_model}_{idx}", label_visibility="collapsed")
-                        
-                        if is_checked:
-                            color_inputs.append({"컬러": color_label, "수량": qty})
+                # 만약 재고 0인 품목에 대해 예약주문 확인 대기 중이라면 승인 폼 표시
+                if st.session_state.pending_reservation_items:
+                    st.warning("⚠️ **재고가 없는 제품이 포함되어 있습니다!**")
+                    st.write("재고가 0인 제품의 경우 장바구니에 추가를 누르면 \"재고가 없는 제품입니다. 예약주문으로 하시겠습니까?\"라는 메시지가 뜹니다.")
                     
-                    st.markdown("")
-                    submitted = st.form_submit_button("🛒 장바구니에 담기", use_container_width=True, type="primary")
-                    
-                    if submitted:
-                        if len(color_inputs) == 0:
-                            st.warning("⚠️ 체크박스로 선택된 컬러가 없습니다.")
-                        else:
-                            for item in color_inputs:
-                                existing_item = None
-                                for cart_item in st.session_state.cart:
-                                    if (cart_item["거래처"] == st.session_state.current_client and 
-                                        cart_item["모델명"] == selected_model_name and 
-                                        cart_item["컬러"] == item["컬러"]):
-                                        existing_item = cart_item
+                    with st.form("reservation_confirm_form"):
+                        st.write("대상 품목:")
+                        for p_item in st.session_state.pending_reservation_items:
+                            st.markdown(- f"**{p_item['모델명']}** / {p_item['컬러']} (수량: {p_item['수량']}개)")
+                        
+                        r_col1, r_col2 = st.columns(2)
+                        with r_col1:
+                            yes_sub = st.form_submit_button("예 (예약주문으로 진행)", use_container_width=True, type="primary")
+                        with r_col2:
+                            no_sub = st.form_submit_button("취소", use_container_width=True)
+                            
+                        if yes_sub:
+                            for p_item in st.session_state.pending_reservation_items:
+                                p_item['비고'] = "예약주문"
+                                # 장바구니에 병합 또는 추가
+                                existing = None
+                                for c_item in st.session_state.cart:
+                                    if (c_item["거래처"] == p_item["거래처"] and 
+                                        c_item["모델명"] == p_item["모델명"] and 
+                                        c_item["컬러"] == p_item["컬러"] and 
+                                        c_item.get("비고") == "예약주문"):
+                                        existing = c_item
                                         break
-                                
-                                if existing_item:
-                                    existing_item["수량"] += item["수량"]
-                                    existing_item["금액"] = existing_item["수량"] * unit_price
+                                if existing:
+                                    existing["수량"] += p_item["수량"]
+                                    existing["금액"] = existing["수량"] * unit_price
                                 else:
-                                    st.session_state.cart.append({
+                                    st.session_state.cart.append(p_item)
+                            st.session_state.pending_reservation_items = []
+                            st.success("🎉 예약주문으로 정상 처리되어 장바구니에 담겼습니다!")
+                            st.rerun()
+                        elif no_sub:
+                            st.session_state.pending_reservation_items = []
+                            st.info("예약주문이 취소되었습니다.")
+                            st.rerun()
+                else:
+                    with st.form(key=f"multi_color_form_{selected_model_name}"):
+                        color_inputs = []
+                        for idx, row in matched_colors_df.iterrows():
+                            col_code = str(row.iloc[1]) if len(row) > 1 else ""
+                            col_name = str(row.iloc[2]) if len(row) > 2 else ""
+                            color_label = f"{col_code} / {col_name}".strip(" /")
+                            
+                            stock_qty = 0
+                            if len(row) > 3:
+                                try:
+                                    stock_qty = int(row.iloc[3])
+                                except:
+                                    stock_qty = 0
+                            
+                            c1, c2 = st.columns([3, 1])
+                            with c1:
+                                stock_color_style = "color: #cc0000;" if stock_qty == 0 else "color: #0066cc;"
+                                st.markdown(f"**{color_label}** &nbsp; <span style='{stock_color_style} font-size: 13px;'>(재고: <b>{stock_qty}개</b>)</span>", unsafe_allow_html=True)
+                                is_checked = st.checkbox("선택", key=f"chk_{clean_selected_model}_{idx}", label_visibility="collapsed")
+                            with c2:
+                                qty = st.number_input("수량", min_value=1, max_value=100, value=1, step=1, key=f"qty_{clean_selected_model}_{idx}", label_visibility="collapsed")
+                            
+                            if is_checked:
+                                color_inputs.append({"컬러": color_label, "수량": qty, "재고": stock_qty})
+                        
+                        st.markdown("")
+                        submitted = st.form_submit_button("🛒 장바구니에 담기", use_container_width=True, type="primary")
+                        
+                        if submitted:
+                            if len(color_inputs) == 0:
+                                st.warning("⚠️ 체크박스로 선택된 컬러가 없습니다.")
+                            else:
+                                zero_stock_items = []
+                                normal_items = []
+                                
+                                for item in color_inputs:
+                                    item_data = {
                                         "거래처": st.session_state.current_client,
                                         "모델명": selected_model_name,
                                         "컬러": item["컬러"],
                                         "수량": item["수량"],
                                         "단가": unit_price,
-                                        "금액": item["수량"] * unit_price
-                                    })
-                                    
-                            st.success(f"🎉 성공적으로 장바구니에 담겼습니다!")
+                                        "금액": item["수량"] * unit_price,
+                                        "비고": ""
+                                    }
+                                    if item["재고"] == 0:
+                                        zero_stock_items.append(item_data)
+                                    else:
+                                        normal_items.append(item_data)
+                                        
+                                # 일반 재고 제품들은 곧바로 장바구니에 담기
+                                for item in normal_items:
+                                    existing_item = None
+                                    for cart_item in st.session_state.cart:
+                                        if (cart_item["거래처"] == item["거래처"] and 
+                                            cart_item["모델명"] == item["모델명"] and 
+                                            cart_item["컬러"] == item["컬러"] and 
+                                            cart_item.get("비고", "") == ""):
+                                            existing_item = cart_item
+                                            break
+                                    if existing_item:
+                                        existing_item["수량"] += item["수량"]
+                                        existing_item["금액"] = existing_item["수량"] * unit_price
+                                    else:
+                                        st.session_state.cart.append(item)
+                                        
+                                # 재고 0인 제품이 있으면 예약주문 승인 대기 상태로 전환
+                                if zero_stock_items:
+                                    st.session_state.pending_reservation_items = zero_stock_items
+                                    st.rerun()
+                                else:
+                                    st.success("🎉 성공적으로 장바구니에 담겼습니다!")
+                                    st.rerun()
                             
                 if len(st.session_state.cart) > 0:
                     st.markdown("---")
@@ -302,7 +364,8 @@ else:
             for idx, item in enumerate(st.session_state.cart):
                 c1, c2, c3 = st.columns([4, 2, 1])
                 with c1:
-                    st.write(f"**{item['모델명']}** / {item['컬러']}")
+                    memo_txt = f" [{item['비고']}]" if item.get('비고') else ""
+                    st.write(f"**{item['모델명']}** / {item['컬러']}{memo_txt}")
                 with c2:
                     st.write(f"수량: {item['수량']}개 (₩ {item['금액']:,})")
                 with c3:
@@ -344,7 +407,8 @@ else:
             for idx, item in enumerate(st.session_state.cart):
                 c1, c2, c3 = st.columns([4, 2, 1])
                 with c1:
-                    st.write(f"**{item['모델명']}** / {item['컬러']}")
+                    memo_txt = f" [{item['비고']}]" if item.get('비고') else ""
+                    st.write(f"**{item['모델명']}** / {item['컬러']}{memo_txt}")
                 with c2:
                     st.write(f"수량: {item['수량']}개 (₩ {item['금액']:,})")
                 with c3:
@@ -393,19 +457,20 @@ else:
     # -------------------------------------------------------------------------
     elif nav_choice == "주문서":
         st.title("📋 작성된 주문서 리스트")
-        st.markdown("완료된 주문서 목록을 확인하고, **수량 변경·품목 삭제·모델 추가** 등으로 직접 수정하거나 취소할 수 있습니다.")
+        st.markdown("완료된 주문서 목록을 확인하고, **예약주문 확인·수량 변경·품목 삭제·모델 추가** 등으로 직접 수정하거나 취소할 수 있습니다.")
         st.markdown("---")
         
         if len(st.session_state.drafts) > 0:
             for i, draft in enumerate(st.session_state.drafts):
-                with st.expander(f"[{draft['시간']}] 거래처: {draft['거래처']} (총 {draft['품목수']}개 품목)"):
+                with st.expander(f"[{draft['시간 ' if '시간 ' in draft else '시간'}] 거래처: {draft['거래처']} (총 {draft['품목수']}개 품목)"):
                     
                     st.markdown("##### ✏️ 주문 품목 편집")
                     updated_items = []
                     for item_idx, item in enumerate(draft["내역"]):
                         col_m, col_c, col_q, col_del = st.columns([3, 2, 2, 1])
                         with col_m:
-                            st.write(f"**{item['모델명']}**")
+                            memo_lbl = f" [{item['비고']}]" if item.get('비고') else ""
+                            st.write(f"**{item['모델명']}**{memo_lbl}")
                         with col_c:
                             st.write(f"{item['컬러']}")
                         with col_q:
@@ -420,7 +485,8 @@ else:
                                 "컬러": item['컬러'],
                                 "수량": new_qty,
                                 "단가": item['단가'],
-                                "금액": new_qty * item['단가']
+                                "금액": new_qty * item['단가'],
+                                "비고": item.get('비고', '')
                             })
                     
                     draft["내역"] = updated_items
