@@ -33,15 +33,13 @@ else:
         st.session_state.step = "input_client"
 
     # -------------------------------------------------------------------------
-    # 🎨 공통 CSS 스타일 주입 (버튼, 카드, 폰트 디자인 고급화)
+    # 공통 CSS 스타일 주입
     # -------------------------------------------------------------------------
     st.markdown("""
         <style>
-        /* 전체 폰트 및 배경 감성 맞춤 */
         .main {
             background-color: #fcfcfc;
         }
-        /* 브랜드 헤더 스타일 */
         .brand-header {
             padding: 15px;
             background: linear-gradient(135deg, #111111, #333333);
@@ -61,7 +59,6 @@ else:
             font-size: 13px;
             color: #aaaaaa;
         }
-        /* Streamlit 기본 버튼 스타일 다듬기 */
         div.stButton > button {
             border-radius: 8px;
             font-weight: 600;
@@ -74,7 +71,6 @@ else:
         </style>
     """, unsafe_allow_html=True)
 
-    # 사이드바 메뉴 디자인
     st.sidebar.markdown("### 👓 REPUBLICA B2B")
     st.sidebar.markdown("---")
     
@@ -119,7 +115,7 @@ else:
                     st.session_state.step = "select_model"
                     st.rerun()
 
-        # [단계 2] 모델 선택 화면 (진한 소재별 색상 적용된 일체형 카드 버튼)
+        # [단계 2] 모델 선택 화면
         elif st.session_state.step == "select_model":
             st.markdown("""
                 <div class="brand-header">
@@ -151,22 +147,20 @@ else:
                 except:
                     price = 33000
 
-                # [소재별 진한 배경톤 및 테두리 설정]
                 mat_lower = material.lower()
                 if "티타늄" in mat_lower or "아세테이트" in mat_lower:
-                    box_bg = "#f7ebe1"   # 진한 브라운/베이지
+                    box_bg = "#f7ebe1"
                     border_c = "#d9b89a"
                     badge_c = "#8c5830"
                 elif "콤비" in mat_lower:
-                    box_bg = "#daf2da"   # 진한 그린
+                    box_bg = "#daf2da"
                     border_c = "#87cb87"
                     badge_c = "#2d6a2d"
                 else:
-                    box_bg = "#eaeaea"   # 진한 회색
+                    box_bg = "#eaeaea"
                     border_c = "#cccccc"
                     badge_c = "#555555"
 
-                # 일체형 카드 디자인 HTML 렌더링
                 st.markdown(f"""
                 <div style="padding: 14px 18px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 12px; margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -192,12 +186,12 @@ else:
                     st.session_state.step = "goto_cart_tab"
                     st.rerun()
 
-        # [단계 3] 컬러 및 수량 선택 화면
+        # [단계 3] 컬러별 수량 선택 및 D열 재고 연동 표시 화면
         elif st.session_state.step == "select_color":
             st.markdown("""
                 <div class="brand-header">
                     <h1>REPUBLICA</h1>
-                    <p>컬러 및 수량 선택</p>
+                    <p>컬러 및 재고 확인</p>
                 </div>
             """, unsafe_allow_html=True)
             
@@ -208,8 +202,8 @@ else:
                 st.rerun()
                 
             st.markdown("---")
-            st.markdown(f"### [{st.session_state.selected_model}] 컬러별 수량 지정")
-            st.markdown("<small style='color: gray;'>원하시는 컬러에 체크하시면 수량이 기본 1개로 설정되며, 필요시 조정할 수 있습니다.</small>", unsafe_allow_html=True)
+            st.markdown(f"### [{st.session_state.selected_model}] 컬러별 재고 및 수량 지정")
+            st.markdown("<small style='color: gray;'>각 컬러별 재고 수량을 확인하고 체크박스 선택 후 수량을 지정하세요.</small>", unsafe_allow_html=True)
 
             selected_model_name = st.session_state.selected_model
             unit_price = st.session_state.unit_price
@@ -238,9 +232,18 @@ else:
                         col_name = str(row.iloc[2]) if len(row) > 2 else ""
                         color_label = f"{col_code} / {col_name}".strip(" /")
                         
+                        # D열(인덱스 3)의 재고 수량 정확히 연동
+                        stock_qty = 0
+                        if len(row) > 3:
+                            try:
+                                stock_qty = int(row.iloc[3])
+                            except:
+                                stock_qty = str(row.iloc[3])
+                        
                         c1, c2 = st.columns([3, 1])
                         with c1:
-                            is_checked = st.checkbox(f"**{color_label}**", key=f"chk_{clean_selected_model}_{idx}")
+                            st.markdown(f"**{color_label}** &nbsp; <span style='color: #0066cc; font-size: 13px;'>(재고: <b>{stock_qty}개</b>)</span>", unsafe_allow_html=True)
+                            is_checked = st.checkbox("선택", key=f"chk_{clean_selected_model}_{idx}", label_visibility="collapsed")
                         with c2:
                             qty = st.number_input("수량", min_value=1, max_value=100, value=1, step=1, key=f"qty_{clean_selected_model}_{idx}", label_visibility="collapsed")
                         
@@ -455,10 +458,8 @@ else:
         
         st.info("💡 현재 이카운트 ERP API 연동 대기 중입니다. (연동 시 실시간 재고 수량이 자동 표기됩니다)")
         
-        if not df_models.empty:
-            inventory_preview = df_models.copy()
-            inventory_preview['실시간 재고'] = "확인 중 (ERP 연동)"
-            st.dataframe(inventory_preview, use_container_width=True)
+        if not df_colors.empty:
+            st.dataframe(df_colors, use_container_width=True)
         else:
             st.warning("재고 데이터를 불러올 수 없습니다.")
 
