@@ -82,7 +82,6 @@ else:
             material_col = df_models.columns[1] if len(df_models.columns) > 1 else None
             price_col = df_models.columns[2] if len(df_models.columns) > 2 else None
 
-            # 세로로 쭉 나열된 모델들을 직관적인 버튼 형태로 제공
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
                 material = str(row[material_col]) if material_col else "N/A"
@@ -91,7 +90,6 @@ else:
                 except:
                     price = 33000
 
-                # 버튼 내부에 모델명, 소재, 단가를 한눈에 담아 터치 편의성 극대화
                 button_label = f"🕶️ {model_name}   |   소재: {material}   |   단가: ₩ {price:,}"
                 
                 if st.button(button_label, key=f"btn_model_{idx}", use_container_width=True):
@@ -286,9 +284,20 @@ else:
 
     elif menu == "주문서 현황":
         st.title("📊 주문서 현황")
+        st.markdown("작성 완료된 주문서 목록을 확인하고, 필요시 취소(삭제)할 수 있습니다.")
+        st.markdown("---")
+        
         if len(st.session_state.drafts) > 0:
             for i, draft in enumerate(st.session_state.drafts):
-                with st.expander(f"[{draft['시간']}] 거래처: {draft['거래처']} (총 {draft['품목수']}개 품목)"):
-                    st.dataframe(pd.DataFrame(draft["내역"]), use_container_width=True)
+                col_exp, col_btn = st.columns([5, 1])
+                with col_exp:
+                    with st.expander(f"[{draft['시간']}] 거래처: {draft['거래처']} (총 {draft['품목수']}개 품목)"):
+                        st.dataframe(pd.DataFrame(draft["내역"]), use_container_width=True)
+                with col_btn:
+                    st.markdown("<br>", unsafe_allow_html=True) # 버튼 정렬 맞춤용 여백
+                    if st.button("❌ 주문 취소", key=f"del_draft_{i}"):
+                        st.session_state.drafts.pop(i)
+                        st.success("주문서가 취소(삭제)되었습니다.")
+                        st.rerun()
         else:
-            st.info("저장된 임시 주문 내역이 없습니다.")
+            st.info("저장된 주문서 현황이 없습니다.")
