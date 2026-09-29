@@ -29,9 +29,8 @@ else:
         st.session_state.drafts = []
     if 'current_client' not in st.session_state:
         st.session_state.current_client = ""
-    # 단계별 화면 관리를 위한 세션 상태 (client_step 또는 model_step 등)
     if 'step' not in st.session_state:
-        st.session_state.step = "input_client"  # 'input_client', 'select_model', 'select_color'
+        st.session_state.step = "input_client"
 
     st.sidebar.markdown("### 👓 REPUBLICA B2B")
     st.sidebar.markdown("---")
@@ -55,7 +54,7 @@ else:
             client_input = st.text_input("거래처 안경원 이름", value=st.session_state.current_client, placeholder="예: 글라스안경 세곡점")
             
             st.markdown("")
-            if st.button("👉 다음 단계 (모델 선택하기)", type="primary", use_container_width=True):
+            if st.button("👉 다음 단계 (제품 고르기)", type="primary", use_container_width=True):
                 if client_input.strip() == "":
                     st.warning("⚠️ 거래처 안경원 이름을 입력해주세요!")
                 else:
@@ -64,44 +63,55 @@ else:
                     st.rerun()
 
         # -------------------------------------------------------------------------
-        # [2단계] 모델 선택 화면
+        # [2단계] 세로 스크롤형 모델 선택 화면
         # -------------------------------------------------------------------------
         elif st.session_state.step == "select_model":
             st.title("👓 REPUBLICA B2B 주문 시스템")
-            st.info(f"📍 **현재 거래처:** {st.session_state.current_client} &nbsp;&nbsp;|&nbsp;&nbsp; [매장명 변경하기]")
+            st.info(f"📍 **현재 거래처:** {st.session_state.current_client}")
+            
             if st.button("🔄 거래처 다시 입력"):
                 st.session_state.step = "input_client"
                 st.rerun()
                 
             st.markdown("---")
             st.markdown("### 2단계: 제품 모델 선택")
-            
-            model_col = df_models.columns[0]
-            model_list = df_models[model_col].dropna().astype(str).tolist()
-            selected_model_name = st.selectbox("주문할 모델을 선택하세요", model_list)
-            
-            model_row = df_models[df_models[model_col].astype(str) == selected_model_name].iloc[0]
-            
-            try:
-                unit_price = int(model_row.iloc[2])
-            except:
-                unit_price = 33000
-                
-            st.success(f"📌 **선택 모델:** {selected_model_name} &nbsp;&nbsp;|&nbsp;&nbsp; 💵 **공급 단가:** ₩ {unit_price:,}")
-            
+            st.markdown("<small style='color: gray;'>원하시는 모델의 **[이 모델 선택하기]** 버튼을 터치해 주세요.</small>", unsafe_allow_html=True)
             st.markdown("")
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("👉 이 모델 컬러 선택하기", type="primary", use_container_width=True):
-                    st.session_state.selected_model = selected_model_name
-                    st.session_state.unit_price = unit_price
-                    st.session_state.step = "select_color"
-                    st.rerun()
-            with col2:
-                if len(st.session_state.cart) > 0:
-                    if st.button("🛒 장바구니로 바로 가기", use_container_width=True):
-                        st.session_state.step = "view_cart_menu" # 임시 또는 메뉴 이동 효과
+            
+            model_col = df_models.columns[0] # 모델명
+            material_col = df_models.columns[1] if len(df_models.columns) > 1 else None # 소재
+            price_col = df_models.columns[2] if len(df_models.columns) > 2 else None # 단가
+
+            # 세로로 쭈욱 스크롤하며 볼 수 있도록 리스트 형태로 루프 생성
+            for idx, row in df_models.iterrows():
+                model_name = str(row[model_col])
+                material = str(row[material_col]) if material_col else "N/A"
+                try:
+                    price = int(row[price_col]) if price_col else 33000
+                except:
+                    price = 33000
+
+                # 각 모델별 카드 형태의 박스 구성
+                with st.container():
+                    st.markdown(f"""
+                    <div style="padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px; background-color: #fafafa;">
+                        <h4 style="margin: 0; color: #111;">🕶️ {model_name}</h4>
+                        <p style="margin: 4px 0 0 0; color: #666; font-size: 14px;">소재: <b>{material}</b> &nbsp;|&nbsp; 단가: <b>₩ {price:,}</b></p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if st.button(f"👉 [{model_name}] 선택하고 컬러 고르기", key=f"btn_model_{idx}", use_container_width=True, type="primary"):
+                        st.session_state.selected_model = model_name
+                        st.session_state.unit_price = price
+                        st.session_state.step = "select_color"
                         st.rerun()
+                    st.markdown("") # 여백
+
+            if len(st.session_state.cart) > 0:
+                st.markdown("---")
+                if st.button("🛒 장바구니 확인 / 주문 완료로 이동", use_container_width=True):
+                    st.session_state.step = "goto_cart_tab"
+                    st.rerun()
 
         # -------------------------------------------------------------------------
         # [3단계] 컬러 선택 및 수량 지정 화면
@@ -110,7 +120,7 @@ else:
             st.title("👓 REPUBLICA B2B 주문 시스템")
             st.info(f"📍 **거래처:** {st.session_state.current_client} &nbsp;|&nbsp; 📌 **모델:** {st.session_state.selected_model}")
             
-            if st.button("⬅️ 다른 모델 선택으로 돌아가기"):
+            if st.button("⬅️ 모델 목록으로 돌아가기"):
                 st.session_state.step = "select_model"
                 st.rerun()
                 
@@ -196,7 +206,6 @@ else:
                             st.rerun()
                     with b_col2:
                         if st.button("🛒 장바구니 확인 / 주문 완료", type="primary", use_container_width=True):
-                            # 사이드바 메뉴를 강제로 장바구니로 유도하거나 장바구니 요약 표시
                             st.session_state.step = "goto_cart_tab"
                             st.rerun()
 
