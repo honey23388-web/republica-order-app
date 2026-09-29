@@ -32,6 +32,49 @@ else:
     if 'step' not in st.session_state:
         st.session_state.step = "input_client"
 
+    # -------------------------------------------------------------------------
+    # 🎨 공통 CSS 스타일 주입 (버튼, 카드, 폰트 디자인 고급화)
+    # -------------------------------------------------------------------------
+    st.markdown("""
+        <style>
+        /* 전체 폰트 및 배경 감성 맞춤 */
+        .main {
+            background-color: #fcfcfc;
+        }
+        /* 브랜드 헤더 스타일 */
+        .brand-header {
+            padding: 15px;
+            background: linear-gradient(135deg, #111111, #333333);
+            color: white;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .brand-header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .brand-header p {
+            margin: 5px 0 0 0;
+            font-size: 13px;
+            color: #aaaaaa;
+        }
+        /* Streamlit 기본 버튼 스타일 다듬기 */
+        div.stButton > button {
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+        }
+        div.stButton > button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # 사이드바 메뉴 디자인
     st.sidebar.markdown("### 👓 REPUBLICA B2B")
     st.sidebar.markdown("---")
     
@@ -55,14 +98,20 @@ else:
         
         # [단계 1] 매장명 입력 화면
         if st.session_state.step == "input_client":
-            st.title("👓 REPUBLICA B2B")
-            st.markdown("### 새주문")
-            st.markdown("#### 거래처 안경원 이름")
+            st.markdown("""
+                <div class="brand-header">
+                    <h1>REPUBLICA</h1>
+                    <p>B2B Professional Optical Order System</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("### 📝 새주문 시작하기")
+            st.markdown("발주를 진행할 **거래처 안경원 이름**을 입력해 주세요.")
             
             client_input = st.text_input("거래처 입력", value=st.session_state.current_client, placeholder="예: 글라스안경 세곡점", label_visibility="collapsed")
             
             st.markdown("")
-            if st.button("주문서 작성 시작", type="primary", use_container_width=True):
+            if st.button("👉 주문서 작성 시작", type="primary", use_container_width=True):
                 if client_input.strip() == "":
                     st.warning("⚠️ 거래처 안경원 이름을 입력해주세요!")
                 else:
@@ -70,9 +119,15 @@ else:
                     st.session_state.step = "select_model"
                     st.rerun()
 
-        # [단계 2] 모델 선택 화면 (완벽 통합형 버튼 + 진한 소재별 배경색)
+        # [단계 2] 모델 선택 화면 (진한 소재별 색상 적용된 일체형 카드 버튼)
         elif st.session_state.step == "select_model":
-            st.title("👓 REPUBLICA B2B 주문 시스템")
+            st.markdown("""
+                <div class="brand-header">
+                    <h1>REPUBLICA</h1>
+                    <p>모델 선택 화면</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
             st.info(f"📍 **현재 거래처:** {st.session_state.current_client}")
             
             if st.button("🔄 거래처 다시 입력"):
@@ -80,8 +135,8 @@ else:
                 st.rerun()
                 
             st.markdown("---")
-            st.markdown("### 제품 모델 선택")
-            st.markdown("<small style='color: gray;'>원하시는 모델 박스를 터치하여 컬러 선택 단계로 넘어가세요.</small>", unsafe_allow_html=True)
+            st.markdown("### 🔍 제품 모델을 선택하세요")
+            st.markdown("<small style='color: gray;'>소재별로 색상이 구분된 아래 모델 카드를 터치해 주세요.</small>", unsafe_allow_html=True)
             st.markdown("")
             
             model_col = df_models.columns[0]
@@ -96,24 +151,40 @@ else:
                 except:
                     price = 33000
 
-                # 소재별 더 진한 배경색 적용
+                # [소재별 진한 배경톤 및 테두리 설정]
                 mat_lower = material.lower()
                 if "티타늄" in mat_lower or "아세테이트" in mat_lower:
-                    bg_hex = "background-color: #faeddf; border: 2px solid #d9b89a;" # 진한 브라운/베이지
+                    box_bg = "#f7ebe1"   # 진한 브라운/베이지
+                    border_c = "#d9b89a"
+                    badge_c = "#8c5830"
                 elif "콤비" in mat_lower:
-                    bg_hex = "background-color: #e2f2e2; border: 2px solid #9ecf9e;" # 진한 그린
+                    box_bg = "#daf2da"   # 진한 그린
+                    border_c = "#87cb87"
+                    badge_c = "#2d6a2d"
                 else:
-                    bg_hex = "background-color: #eaeaea; border: 2px solid #cccccc;" # 진한 회색
+                    box_bg = "#eaeaea"   # 진한 회색
+                    border_c = "#cccccc"
+                    badge_c = "#555555"
 
-                # 버튼 내부에 모델명, 소재, 단가가 모두 포함되도록 HTML과 결합된 라벨 구성
-                btn_label = f"🕶️ {model_name}   |   소재: {material}   |   단가: ₩ {price:,}"
-
-                # Streamlit 버튼 자체에 커스텀 스타일을 입히기 위해 고유 키와 함께 렌더링
-                if st.button(btn_label, key=f"unified_model_btn_{idx}", use_container_width=True):
+                # 일체형 카드 디자인 HTML 렌더링
+                st.markdown(f"""
+                <div style="padding: 14px 18px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 12px; margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 17px; font-weight: 700; color: #111;">🕶️ {model_name}</span>
+                        <span style="background-color: {badge_c}; color: white; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600;">{material}</span>
+                    </div>
+                    <div style="margin-top: 6px; font-size: 14px; color: #444;">
+                        공급 단가: <b>₩ {price:,}</b>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if st.button(f"👉 [{model_name}] 선택하고 컬러 고르기", key=f"btn_model_{idx}", use_container_width=True, type="primary"):
                     st.session_state.selected_model = model_name
                     st.session_state.unit_price = price
                     st.session_state.step = "select_color"
                     st.rerun()
+                st.markdown("<div style='margin-bottom: 15px;'></div>", unsafe_allow_html=True)
 
             if len(st.session_state.cart) > 0:
                 st.markdown("---")
@@ -123,7 +194,13 @@ else:
 
         # [단계 3] 컬러 및 수량 선택 화면
         elif st.session_state.step == "select_color":
-            st.title("👓 REPUBLICA B2B 주문 시스템")
+            st.markdown("""
+                <div class="brand-header">
+                    <h1>REPUBLICA</h1>
+                    <p>컬러 및 수량 선택</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
             st.info(f"📍 **거래처:** {st.session_state.current_client} &nbsp;|&nbsp; 📌 **모델:** {st.session_state.selected_model}")
             
             if st.button("⬅️ 모델 목록으로 돌아가기"):
@@ -131,7 +208,7 @@ else:
                 st.rerun()
                 
             st.markdown("---")
-            st.markdown(f"### [{st.session_state.selected_model}] 컬러 및 수량 선택")
+            st.markdown(f"### [{st.session_state.selected_model}] 컬러별 수량 지정")
             st.markdown("<small style='color: gray;'>원하시는 컬러에 체크하시면 수량이 기본 1개로 설정되며, 필요시 조정할 수 있습니다.</small>", unsafe_allow_html=True)
 
             selected_model_name = st.session_state.selected_model
@@ -309,7 +386,7 @@ else:
             st.info("장바구니가 비어 있습니다. '새주문' 메뉴에서 제품을 담아주세요.")
 
     # -------------------------------------------------------------------------
-    # 3. 주문서 메뉴 (실제 품목별 수정 및 추가 기능 탑재)
+    # 3. 주문서 메뉴
     # -------------------------------------------------------------------------
     elif nav_choice == "주문서":
         st.title("📋 작성된 주문서 리스트")
@@ -320,7 +397,6 @@ else:
             for i, draft in enumerate(st.session_state.drafts):
                 with st.expander(f"[{draft['시간']}] 거래처: {draft['거래처']} (총 {draft['품목수']}개 품목)"):
                     
-                    # 주문서 내부 품목 직접 편집 영역
                     st.markdown("##### ✏️ 주문 품목 편집")
                     updated_items = []
                     for item_idx, item in enumerate(draft["내역"]):
@@ -344,7 +420,6 @@ else:
                                 "금액": new_qty * item['단가']
                             })
                     
-                    # 수정된 내역 즉시 반영 버튼 및 모델 추가 버튼
                     draft["내역"] = updated_items
                     draft["품목수"] = sum(x['수량'] for x in updated_items)
                     
