@@ -30,21 +30,19 @@ else:
     if 'current_client' not in st.session_state:
         st.session_state.current_client = ""
 
-    # 사이드바 메뉴 디자인 개선
     st.sidebar.markdown("### 👓 REPUBLICA B2B")
     st.sidebar.markdown("---")
     menu = st.sidebar.radio("메뉴 이동", ["새주문 (시작)", "장바구니 / 임시저장", "주문서 현황"])
     
-    # 사이드바에 현재 담긴 장바구니 요약 실시간 표시
     if len(st.session_state.cart) > 0:
         st.sidebar.markdown("---")
-        st.sidebar.info(f"🛒 장바구니 품목: **{len(st.session_state.cart)}개**")
+        total_items_count = sum(item['수량'] for item in st.session_state.cart)
+        st.sidebar.info(f"🛒 장바구니 수량: 총 **{total_items_count}개**")
 
     if menu == "새주문 (시작)":
         st.title("👓 REPUBLICA B2B 주문 시스템")
         st.markdown("거래처 안경원 이름을 입력하고 원하는 모델과 컬러 수량을 자유롭게 담아보세요.")
         
-        # 1. 거래처 입력 영역
         st.markdown("#### 1️⃣ 거래처 정보")
         client_name = st.text_input("거래처 안경원 이름", value=st.session_state.current_client, placeholder="예: 글라스안경 세곡점")
         
@@ -53,7 +51,6 @@ else:
 
         st.markdown("---")
         
-        # 2. 모델 선택 영역
         st.markdown("#### 2️⃣ 제품 모델 선택")
         model_col = df_models.columns[0]
         model_list = df_models[model_col].dropna().astype(str).tolist()
@@ -66,10 +63,8 @@ else:
         except:
             unit_price = 33000
             
-        # 선택된 모델 정보 박스 강조
         st.success(f"📌 **선택 모델:** {selected_model_name} &nbsp;&nbsp;|&nbsp;&nbsp; 💵 **공급 단가:** ₩ {unit_price:,}")
 
-        # 스마트 매칭 로직
         clean_selected_model = selected_model_name.split('(')[0].strip().upper()
         color_model_col = df_colors.columns[0]
         
@@ -97,7 +92,6 @@ else:
                     col_name = str(row.iloc[2]) if len(row) > 2 else ""
                     color_label = f"{col_code} / {col_name}".strip(" /")
                     
-                    # 깔끔한 열 정렬
                     c1, c2 = st.columns([3, 1])
                     with c1:
                         is_checked = st.checkbox(f"**{color_label}**", key=f"chk_{clean_selected_model}_{idx}")
@@ -117,15 +111,31 @@ else:
                         st.warning("⚠️ 체크박스로 선택된 컬러가 없습니다.")
                     else:
                         for item in color_inputs:
-                            st.session_state.cart.append({
-                                "거래처": st.session_state.current_client,
-                                "모델명": selected_model_name,
-                                "컬러": item["컬러"],
-                                "수량": item["수량"],
-                                "단가": unit_price,
-                                "금액": item["수량"] * unit_price
-                            })
-                        st.success(f"🎉 **{selected_model_name}** 발주 내역이 장바구니에 안전하게 담겼습니다! 다른 모델도 이어서 선택해 보세요.")
+                            # [핵심 로직] 이미 장바구니에 동일한 [거래처, 모델명, 컬러]가 있는지 검사
+                            existing_item = None
+                            for cart_item in st.session_state.cart:
+                                if (cart_item["거래처"] == st.session_state.current_client and 
+                                    cart_item["모델명"] == selected_model_name and 
+                                    cart_item["컬러"] == item["컬러"]):
+                                    existing_item = cart_item
+                                    break
+                            
+                            if existing_item:
+                                # 이미 존재하면 수량과 금액만 누적 합산
+                                existing_item["수량"] += item["수량"]
+                                existing_item["금액"] = existing_item["수량"] * unit_price
+                            else:
+                                # 없으면 새로 추가
+                                st.session_state.cart.append({
+                                    "거래처": st.session_state.current_client,
+                                    "모델명": selected_model_name,
+                                    "컬러": item["컬러"],
+                                    "수량": item["수량"],
+                                    "단가": unit_price,
+                                    "금액": item["수량"] * unit_price
+                                })
+                                
+                        st.success(f"🎉 **{selected_model_name}** 발주 내역이 장바구니에 안전하게 반영되었습니다! (동일 상품은 수량이 자동 합산됩니다)")
 
         # 현재까지 담긴 장바구니 요약 미리보기
         if len(st.session_state.cart) > 0:
@@ -161,7 +171,7 @@ else:
                     st.success("주문이 성공적으로 전송되었습니다!")
                     st.session_state.cart = []
         else:
-            st.info("장바구니가 비어 있습니다. '새주문' 메뉴에서 제품을 담아주세요.")
+            st.info(" 장바구니가 비어 있습니다. '새주문' 메뉴에서 제품을 담아주세요.")
 
     elif menu == "주문서 현황":
         st.title("📊 주문서 현황")
