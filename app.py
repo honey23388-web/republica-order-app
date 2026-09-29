@@ -31,7 +31,6 @@ else:
         st.session_state.current_client = ""
     if 'step' not in st.session_state:
         st.session_state.step = "input_client"
-    # 예약주문 팝업 승인 대기를 위한 세션 상태
     if 'pending_reservation_items' not in st.session_state:
         st.session_state.pending_reservation_items = []
 
@@ -228,26 +227,24 @@ else:
             if matched_colors_df.empty:
                 st.warning(f"⚠️ '{selected_model_name}' 모델에 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
-                # 만약 재고 0인 품목에 대해 예약주문 확인 대기 중이라면 승인 폼 표시
                 if st.session_state.pending_reservation_items:
                     st.warning("⚠️ **재고가 없는 제품이 포함되어 있습니다!**")
-                    st.write("재고가 0인 제품의 경우 장바구니에 추가를 누르면 \"재고가 없는 제품입니다. 예약주문으로 하시겠습니까?\"라는 메시지가 뜹니다.")
+                    st.write('재고가 없는 제품입니다. 예약주문으로 하시겠습니까?')
                     
                     with st.form("reservation_confirm_form"):
-                        st.write("대상 품목:")
+                        st.write("**[예약주문 대상 품목]**")
                         for p_item in st.session_state.pending_reservation_items:
-                            st.markdown(- f"**{p_item['모델명']}** / {p_item['컬러']} (수량: {p_item['수량']}개)")
+                            st.markdown(f"- **{p_item['모델명']}** / {p_item['컬러']} (수량: {p_item['수량']}개)")
                         
                         r_col1, r_col2 = st.columns(2)
                         with r_col1:
-                            yes_sub = st.form_submit_button("예 (예약주문으로 진행)", use_container_width=True, type="primary")
+                            yes_sub = st.form_submit_button("예 (예약주문 진행)", use_container_width=True, type="primary")
                         with r_col2:
                             no_sub = st.form_submit_button("취소", use_container_width=True)
                             
                         if yes_sub:
                             for p_item in st.session_state.pending_reservation_items:
                                 p_item['비고'] = "예약주문"
-                                # 장바구니에 병합 또는 추가
                                 existing = None
                                 for c_item in st.session_state.cart:
                                     if (c_item["거래처"] == p_item["거래처"] and 
@@ -319,7 +316,6 @@ else:
                                     else:
                                         normal_items.append(item_data)
                                         
-                                # 일반 재고 제품들은 곧바로 장바구니에 담기
                                 for item in normal_items:
                                     existing_item = None
                                     for cart_item in st.session_state.cart:
@@ -335,7 +331,6 @@ else:
                                     else:
                                         st.session_state.cart.append(item)
                                         
-                                # 재고 0인 제품이 있으면 예약주문 승인 대기 상태로 전환
                                 if zero_stock_items:
                                     st.session_state.pending_reservation_items = zero_stock_items
                                     st.rerun()
@@ -457,12 +452,14 @@ else:
     # -------------------------------------------------------------------------
     elif nav_choice == "주문서":
         st.title("📋 작성된 주문서 리스트")
-        st.markdown("완료된 주문서 목록을 확인하고, **예약주문 확인·수량 변경·품목 삭제·모델 추가** 등으로 직접 수정하거나 취소할 수 있습니다.")
+        st.markdown("완료된 주문서 목록을 확인하고, **수량 변경·품목 삭제·모델 추가** 등으로 직접 수정하거나 취소할 수 있습니다.")
         st.markdown("---")
         
         if len(st.session_state.drafts) > 0:
             for i, draft in enumerate(st.session_state.drafts):
-                with st.expander(f"[{draft['시간 ' if '시간 ' in draft else '시간'}] 거래처: {draft['거래처']} (총 {draft['품목수']}개 품목)"):
+                time_key = '시간'
+                t_str = draft.get(time_key, '시간정보없음')
+                with st.expander(f"[{t_str}] 거래처: {draft['거래처']} (총 {draft['품목수']}개 품목)"):
                     
                     st.markdown("##### ✏️ 주문 품목 편집")
                     updated_items = []
