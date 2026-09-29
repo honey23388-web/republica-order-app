@@ -32,13 +32,9 @@ else:
     if 'step' not in st.session_state:
         st.session_state.step = "input_client"
 
-    # -------------------------------------------------------------------------
-    # 하단 탭 스타일을 모방한 상단 네비게이션 (스마트폰 직관성 강화)
-    # -------------------------------------------------------------------------
     st.sidebar.markdown("### 👓 REPUBLICA B2B")
     st.sidebar.markdown("---")
     
-    # 장바구니 뱃지 카운트 계산
     cart_count = sum(item['수량'] for item in st.session_state.cart)
     
     nav_choice = st.sidebar.radio(
@@ -53,11 +49,11 @@ else:
     )
 
     # -------------------------------------------------------------------------
-    # 1. 새주문 메뉴 (스케치 기반 첫 화면 및 상세 마법사 흐름)
+    # 1. 새주문 메뉴
     # -------------------------------------------------------------------------
     if nav_choice == "새주문":
         
-        # [단계 1] 매장명 입력 화면 (스케치 시안 반영)
+        # [단계 1] 매장명 입력 화면
         if st.session_state.step == "input_client":
             st.title("👓 REPUBLICA B2B")
             st.markdown("### 새주문")
@@ -74,7 +70,7 @@ else:
                     st.session_state.step = "select_model"
                     st.rerun()
 
-        # [단계 2] 모델 선택 화면 (카드 버튼형)
+        # [단계 2] 모델 선택 화면 (소재별 박스 색상 적용)
         elif st.session_state.step == "select_model":
             st.title("👓 REPUBLICA B2B 주문 시스템")
             st.info(f"📍 **현재 거래처:** {st.session_state.current_client}")
@@ -85,7 +81,7 @@ else:
                 
             st.markdown("---")
             st.markdown("### 제품 모델 선택")
-            st.markdown("<small style='color: gray;'>원하시는 모델 버튼을 터치하여 컬러 선택 단계로 넘어가세요.</small>", unsafe_allow_html=True)
+            st.markdown("<small style='color: gray;'>소재별로 색상이 구분된 모델 박스를 확인하고 선택하세요.</small>", unsafe_allow_html=True)
             st.markdown("")
             
             model_col = df_models.columns[0]
@@ -94,15 +90,34 @@ else:
 
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
-                material = str(row[material_col]) if material_col else "N/A"
+                material = str(row[material_col]).strip() if material_col else "기타"
                 try:
                     price = int(row[price_col]) if price_col else 33000
                 except:
                     price = 33000
 
-                button_label = f"🕶️ {model_name}   |   소재: {material}   |   단가: ₩ {price:,}"
+                # [소재별 박스 배경색 및 테두리 설정]
+                mat_lower = material.lower()
+                if "티타늄" in mat_lower or "아세테이트" in mat_lower:
+                    bg_color = "#fbf6f0"  # 옅은 브라운색
+                    border_color = "#e6d5c3"
+                elif "콤비" in mat_lower:
+                    bg_color = "#f0f7f0"  # 옅은 그린색
+                    border_color = "#cce3cc"
+                else:
+                    bg_color = "#f4f4f4"  # 옅은 회색
+                    border_color = "#e0e0e0"
+
+                # HTML 카드 박스 렌더링
+                st.markdown(f"""
+                <div style="padding: 12px 16px; background-color: {bg_color}; border: 1px solid {border_color}; border-radius: 8px 8px 0 0; margin-top: 10px;">
+                    <b style="font-size: 16px; color: #222;">🕶️ {model_name}</b><br>
+                    <span style="font-size: 13px; color: #555;">소재: <b>{material}</b> &nbsp;|&nbsp; 단가: <b>₩ {price:,}</b></span>
+                </div>
+                """, unsafe_allow_html=True)
                 
-                if st.button(button_label, key=f"btn_model_{idx}", use_container_width=True):
+                # 선택 버튼
+                if st.button(f"👉 [{model_name}] 선택하기", key=f"btn_model_{idx}", use_container_width=True, type="primary"):
                     st.session_state.selected_model = model_name
                     st.session_state.unit_price = price
                     st.session_state.step = "select_color"
@@ -110,7 +125,7 @@ else:
 
             if len(st.session_state.cart) > 0:
                 st.markdown("---")
-                if st.button("🛒 장바구니 확인 / 주문 완료로 이동", use_container_width=True, type="primary"):
+                if st.button("🛒 장바구니 확인 / 주문 완료로 이동", use_container_width=True):
                     st.session_state.step = "goto_cart_tab"
                     st.rerun()
 
@@ -207,10 +222,10 @@ else:
                             st.session_state.step = "goto_cart_tab"
                             st.rerun()
 
-        # 장바구니 바로가기 상태 처리 (새주문 내부 분기)
+        # 장바구니 바로가기 상태 처리
         if st.session_state.step == "goto_cart_tab":
             st.title("🛒 장바구니 현황")
-            st.markdown(f"현재 거래처: **{st.session_state.current_client}**[cite: 11]")
+            st.markdown(f"현재 거래처: **{st.session_state.current_client}**")
             
             for idx, item in enumerate(st.session_state.cart):
                 c1, c2, c3 = st.columns([4, 2, 1])
@@ -246,10 +261,10 @@ else:
                     st.rerun()
 
     # -------------------------------------------------------------------------
-    # 2. 장바구니 메뉴 (현재 작성중이거나 임시저장된 장바구니 관리)[cite: 11]
+    # 2. 장바구니 메뉴
     # -------------------------------------------------------------------------
     elif nav_choice.startswith("장바구니"):
-        st.title("🛒 장바구니 및 임시저장")[cite: 11]
+        st.title("🛒 장바구니 및 임시저장")
         st.markdown(f"현재 거래처: **{st.session_state.current_client or '지정되지 않음'}**")
         st.markdown("---")
         
@@ -302,10 +317,10 @@ else:
             st.info("장바구니가 비어 있습니다. '새주문' 메뉴에서 제품을 담아주세요.")
 
     # -------------------------------------------------------------------------
-    # 3. 주문서 메뉴 (작성 완료된 주문서들 리스트 및 취소 관리)[cite: 11]
+    # 3. 주문서 메뉴
     # -------------------------------------------------------------------------
     elif nav_choice == "주문서":
-        st.title("📋 작성된 주문서 리스트")[cite: 11]
+        st.title("📋 작성된 주문서 리스트")
         st.markdown("완료된 주문서 목록을 확인하고, 필요시 주문을 취소할 수 있습니다.")
         st.markdown("---")
         
@@ -325,17 +340,15 @@ else:
             st.info("작성된 주문서 내역이 없습니다.")
 
     # -------------------------------------------------------------------------
-    # 4. 재고현황 메뉴 (이카운트 ERP 재고 반영 연동용)[cite: 11]
+    # 4. 재고현황 메뉴
     # -------------------------------------------------------------------------
     elif nav_choice == "재고현황":
-        st.title("📦 실시간 재고 현황")[cite: 11]
+        st.title("📦 실시간 재고 현황")
         st.markdown("이카운트 ERP(Ecount ERP API) 연동을 통해 실시간 제품별 재고 수량을 확인할 수 있습니다.")
         st.markdown("---")
         
-        # 현재 시트의 모델/컬러 정보를 기반으로 한 실시간 재고 테이블 연동 프리뷰
         st.info("💡 현재 이카운트 ERP API 연동 대기 중입니다. (연동 시 실시간 재고 수량이 자동 표기됩니다)")
         
-        # 임시 재고 리스트 표시 (모델 및 단가 기반)
         if not df_models.empty:
             inventory_preview = df_models.copy()
             inventory_preview['실시간 재고'] = "확인 중 (ERP 연동)"
@@ -344,30 +357,27 @@ else:
             st.warning("재고 데이터를 불러올 수 없습니다.")
 
     # -------------------------------------------------------------------------
-    # 5. 현황 메뉴 (일별 주문 및 판매 금액 현황 - 주별/월별 집계)[cite: 11]
+    # 5. 현황 메뉴
     # -------------------------------------------------------------------------
     elif nav_choice == "현황":
-        st.title("📊 매출 및 주문 현황")[cite: 11]
+        st.title("📊 매출 및 주문 현황")
         st.markdown("일별 주문, 주별 및 월별 판매 금액 현황을 한눈에 확인할 수 있습니다.")
         st.markdown("---")
         
         if len(st.session_state.drafts) == 0:
             st.info("📈 집계할 완료된 주문서 데이터가 아직 없습니다. 주문을 완료하면 통계가 자동 집계됩니다.")
         else:
-            # 모든 드래프트(주문 완료 내역)의 상세 아이템들을 하나의 데이터프레임으로 통합
             all_orders = []
             for draft in st.session_state.drafts:
                 order_time = draft['시간']
                 for item in draft['내역']:
                     item_copy = item.copy()
                     item_copy['주문시각'] = order_time
-                    # 날짜만 추출 (YYYY-MM-DD)
                     item_copy['날짜'] = order_time.split()[0]
                     all_orders.append(item_copy)
             
             df_orders_all = pd.DataFrame(all_orders)
             
-            # 총 판매 금액 요약
             total_sales = df_orders_all['금액'].sum()
             total_qty = df_orders_all['수량'].sum()
             
