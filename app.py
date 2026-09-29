@@ -6,7 +6,6 @@ st.set_page_config(page_title="REPUBLICA B2B 발주 시스템", page_icon="👓"
 
 SHEET_ID = "1FiP0FFJI8OdswJa_p6ejkOpLZGbVZx9j71UUSJ6zLN4"
 
-# ⚡ 데이터 로딩 및 오류 방지 강화
 @st.cache_data(ttl=3600)
 def load_data():
     try:
@@ -53,7 +52,7 @@ else:
     if 'cart_memo' not in st.session_state:
         st.session_state.cart_memo = ""
 
-    # 공통 CSS 스타일 주입
+    # 공통 CSS 스타일 주입 (버튼 일체형 디자인 최적화)
     st.markdown("""
         <style>
         .main {
@@ -78,8 +77,9 @@ else:
             font-size: 13px;
             color: #aaaaaa;
         }
+        /* 모델 카드 내부 버튼 디자인을 깔끔하게 통일 */
         div.stButton > button {
-            border-radius: 8px;
+            border-radius: 10px;
             font-weight: 600;
             transition: all 0.2s ease-in-out;
         }
@@ -193,10 +193,11 @@ else:
                     st.rerun()
 
             st.markdown("---")
-            st.markdown("### 📋 전체 모델 목록에서 선택")
-            st.markdown("<small style='color: gray;'>소재별로 색상이 구분된 아래 모델 카드를 터치해 주세요.</small>", unsafe_allow_html=True)
+            st.markdown("### 📋 제품 모델 선택")
+            st.markdown("<small style='color: gray;'>소재별 색상이 적용된 아래 카드 버튼을 터치하여 컬러 선택으로 넘어가세요.</small>", unsafe_allow_html=True)
             st.markdown("")
 
+            # [핵심 개선] 제품 설명 카드와 선택 버튼을 하나의 완벽한 카드형 버튼으로 일체화
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
                 material = str(row[material_col]).strip() if material_col else "기타"
@@ -219,24 +220,22 @@ else:
                     border_c = "#cccccc"
                     badge_c = "#555555"
 
+                # Streamlit 버튼 안에 HTML 정보를 얹어 완벽하게 일체화된 카드 버튼 구현
+                btn_caption = f"🕶️ {model_name}  [{material}]  |  단가: ₩ {price:,}"
+                
+                # 커스텀 스타일 마크다운 카드와 버튼을 타이트하게 밀착
                 st.markdown(f"""
-                <div style="padding: 14px 18px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 12px; margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 17px; font-weight: 700; color: #111;">🕶️ {model_name}</span>
-                        <span style="background-color: {badge_c}; color: white; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600;">{material}</span>
-                    </div>
-                    <div style="margin-top: 6px; font-size: 14px; color: #444;">
-                        공급 단가: <b>₩ {price:,}</b>
-                    </div>
+                <div style="padding: 10px 14px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 10px 10px 0 0; margin-top: 10px; font-weight: 700; color: #111; display: flex; justify-content: space-between; align-items: center;">
+                    <span>🕶️ {model_name}</span>
+                    <span style="background-color: {badge_c}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">{material}</span>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                if st.button(f"👉 [{model_name}] 선택하고 컬러 고르기", key=f"btn_model_{idx}", use_container_width=True, type="primary"):
+                if st.button(f"👉 선택하기 (공급 단가: ₩ {price:,})", key=f"unified_card_{idx}", use_container_width=True, type="primary"):
                     st.session_state.selected_model = model_name
                     st.session_state.unit_price = price
                     st.session_state.step = "select_color"
                     st.rerun()
-                st.markdown("<div style='margin-bottom: 15px;'></div>", unsafe_allow_html=True)
 
             if len(st.session_state.cart) > 0:
                 st.markdown("---")
