@@ -63,7 +63,7 @@ else:
                     st.rerun()
 
         # -------------------------------------------------------------------------
-        # [2단계] 세로 스크롤형 모델 선택 화면
+        # [2단계] 카드 버튼형 모델 선택 화면
         # -------------------------------------------------------------------------
         elif st.session_state.step == "select_model":
             st.title("👓 REPUBLICA B2B 주문 시스템")
@@ -75,14 +75,14 @@ else:
                 
             st.markdown("---")
             st.markdown("### 2단계: 제품 모델 선택")
-            st.markdown("<small style='color: gray;'>원하시는 모델의 **[이 모델 선택하기]** 버튼을 터치해 주세요.</small>", unsafe_allow_html=True)
+            st.markdown("<small style='color: gray;'>원하시는 모델 버튼을 터치하여 컬러 선택 단계로 넘어가세요.</small>", unsafe_allow_html=True)
             st.markdown("")
             
-            model_col = df_models.columns[0] # 모델명
-            material_col = df_models.columns[1] if len(df_models.columns) > 1 else None # 소재
-            price_col = df_models.columns[2] if len(df_models.columns) > 2 else None # 단가
+            model_col = df_models.columns[0]
+            material_col = df_models.columns[1] if len(df_models.columns) > 1 else None
+            price_col = df_models.columns[2] if len(df_models.columns) > 2 else None
 
-            # 세로로 쭈욱 스크롤하며 볼 수 있도록 리스트 형태로 루프 생성
+            # 세로로 쭉 나열된 모델들을 직관적인 버튼 형태로 제공
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
                 material = str(row[material_col]) if material_col else "N/A"
@@ -91,25 +91,18 @@ else:
                 except:
                     price = 33000
 
-                # 각 모델별 카드 형태의 박스 구성
-                with st.container():
-                    st.markdown(f"""
-                    <div style="padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px; background-color: #fafafa;">
-                        <h4 style="margin: 0; color: #111;">🕶️ {model_name}</h4>
-                        <p style="margin: 4px 0 0 0; color: #666; font-size: 14px;">소재: <b>{material}</b> &nbsp;|&nbsp; 단가: <b>₩ {price:,}</b></p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if st.button(f"👉 [{model_name}] 선택하고 컬러 고르기", key=f"btn_model_{idx}", use_container_width=True, type="primary"):
-                        st.session_state.selected_model = model_name
-                        st.session_state.unit_price = price
-                        st.session_state.step = "select_color"
-                        st.rerun()
-                    st.markdown("") # 여백
+                # 버튼 내부에 모델명, 소재, 단가를 한눈에 담아 터치 편의성 극대화
+                button_label = f"🕶️ {model_name}   |   소재: {material}   |   단가: ₩ {price:,}"
+                
+                if st.button(button_label, key=f"btn_model_{idx}", use_container_width=True):
+                    st.session_state.selected_model = model_name
+                    st.session_state.unit_price = price
+                    st.session_state.step = "select_color"
+                    st.rerun()
 
             if len(st.session_state.cart) > 0:
                 st.markdown("---")
-                if st.button("🛒 장바구니 확인 / 주문 완료로 이동", use_container_width=True):
+                if st.button("🛒 장바구니 확인 / 주문 완료로 이동", use_container_width=True, type="primary"):
                     st.session_state.step = "goto_cart_tab"
                     st.rerun()
 
@@ -195,7 +188,6 @@ else:
                                     
                             st.success(f"🎉 성공적으로 장바구니에 담겼습니다!")
                             
-                # 장바구니 담은 후 분기 버튼 제공
                 if len(st.session_state.cart) > 0:
                     st.markdown("---")
                     st.markdown("#### ✨ 다음 작업을 선택하세요:")
