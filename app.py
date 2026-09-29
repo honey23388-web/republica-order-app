@@ -9,8 +9,9 @@ SHEET_ID = "1FiP0FFJI8OdswJa_p6ejkOpLZGbVZx9j71UUSJ6zLN4"
 @st.cache_data(ttl=60)
 def load_data():
     try:
-        model_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=모델"
-        color_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=컬러"
+        # 영문 탭 이름(model, color)으로 안정적으로 CSV 호출
+        model_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=model"
+        color_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=color"
         
         df_models = pd.read_csv(model_url)
         df_colors = pd.read_csv(color_url)
@@ -20,8 +21,8 @@ def load_data():
 
 df_models, df_colors = load_data()
 
-if df_models is None or df_colors is None:
-    st.error("⚠️ 구글 시트 데이터를 불러오는 데 실패했습니다. 시트 공유 상태를 확인해 주세요.")
+if df_models is None or df_colors is None or df_models.empty:
+    st.error("⚠️ 구글 시트 데이터를 불러오는 데 실패했습니다. 1) 탭 이름이 'model', 'color'로 되어 있는지, 2) 링크 공유가 '뷰어'로 열려 있는지 확인해 주세요.")
 else:
     if 'cart' not in st.session_state:
         st.session_state.cart = []
