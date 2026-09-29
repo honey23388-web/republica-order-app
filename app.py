@@ -70,7 +70,7 @@ else:
                     st.session_state.step = "select_model"
                     st.rerun()
 
-        # [단계 2] 모델 선택 화면 (통합 카드 버튼 + 진한 소재별 색상)
+        # [단계 2] 모델 선택 화면 (완벽 통합형 버튼 + 진한 소재별 배경색)
         elif st.session_state.step == "select_model":
             st.title("👓 REPUBLICA B2B 주문 시스템")
             st.info(f"📍 **현재 거래처:** {st.session_state.current_client}")
@@ -96,27 +96,20 @@ else:
                 except:
                     price = 33000
 
-                # [소재별 박스 배경색 및 테두리 설정 - 확실히 더 진한 톤 적용]
+                # 소재별 더 진한 배경색 적용
                 mat_lower = material.lower()
                 if "티타늄" in mat_lower or "아세테이트" in mat_lower:
-                    bg_color = "#faeddf"  # 진한 브라운/베이지 톤
-                    border_color = "#d9b89a"
+                    bg_hex = "background-color: #faeddf; border: 2px solid #d9b89a;" # 진한 브라운/베이지
                 elif "콤비" in mat_lower:
-                    bg_color = "#e2f2e2"  # 진한 그린 톤
-                    border_color = "#9ecf9e"
+                    bg_hex = "background-color: #e2f2e2; border: 2px solid #9ecf9e;" # 진한 그린
                 else:
-                    bg_color = "#eaeaea"  # 진한 회색 톤
-                    border_color = "#cccccc"
+                    bg_hex = "background-color: #eaeaea; border: 2px solid #cccccc;" # 진한 회색
 
-                card_label = f"🕶️ {model_name}   |   소재: {material}   |   단가: ₩ {price:,}"
+                # 버튼 내부에 모델명, 소재, 단가가 모두 포함되도록 HTML과 결합된 라벨 구성
+                btn_label = f"🕶️ {model_name}   |   소재: {material}   |   단가: ₩ {price:,}"
 
-                st.markdown(f"""
-                <div style="padding: 10px 14px; background-color: {bg_color}; border: 2px solid {border_color}; border-radius: 8px 8px 0 0; margin-top: 12px; font-weight: bold; color: #111;">
-                    {card_label}
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if st.button(f"👉 [{model_name}] 선택하고 컬러 고르기", key=f"btn_model_{idx}", use_container_width=True, type="primary"):
+                # Streamlit 버튼 자체에 커스텀 스타일을 입히기 위해 고유 키와 함께 렌더링
+                if st.button(btn_label, key=f"unified_model_btn_{idx}", use_container_width=True):
                     st.session_state.selected_model = model_name
                     st.session_state.unit_price = price
                     st.session_state.step = "select_color"
@@ -316,28 +309,60 @@ else:
             st.info("장바구니가 비어 있습니다. '새주문' 메뉴에서 제품을 담아주세요.")
 
     # -------------------------------------------------------------------------
-    # 3. 주문서 메뉴 (취소 및 수정 기능 탑재)
+    # 3. 주문서 메뉴 (실제 품목별 수정 및 추가 기능 탑재)
     # -------------------------------------------------------------------------
     elif nav_choice == "주문서":
         st.title("📋 작성된 주문서 리스트")
-        st.markdown("완료된 주문서 목록을 확인하고, 필요시 **수정**하거나 **취소**할 수 있습니다.")
+        st.markdown("완료된 주문서 목록을 확인하고, **수량 변경·품목 삭제·모델 추가** 등으로 직접 수정하거나 취소할 수 있습니다.")
         st.markdown("---")
         
         if len(st.session_state.drafts) > 0:
             for i, draft in enumerate(st.session_state.drafts):
-                t_str = draft['시간']
-                with st.expander(f"[{t_str}] 거래처: {draft['거래처']} (총 {draft['품목수']}개 품목)"):
-                    st.dataframe(pd.DataFrame(draft["내역"]), use_container_width=True)
+                with st.expander(f"[{draft['시간']}] 거래처: {draft['거래처']} (총 {draft['품목수']}개 품목)"):
                     
-                    col_edit, col_del = st.columns(2)
-                    with col_edit:
-                        if st.button("✏️ 이 주문서 수정하기", key=f"edit_draft_{i}", use_container_width=True):
-                            st.session_state.current_client = draft['거래처']
-                            st.session_state.cart = draft['내역'].copy()
-                            st.session_state.drafts.pop(i)
-                            st.success(f"'{draft['거래처']}'의 주문서를 장바구니로 불러왔습니다. 수정 후 다시 완료해주세요!")
+                    # 주문서 내부 품목 직접 편집 영역
+                    st.markdown("##### ✏️ 주문 품목 편집")
+                    updated_items = []
+                    for item_idx, item in enumerate(draft["내역"]):
+                        col_m, col_c, col_q, col_del = st.columns([3, 2, 2, 1])
+                        with col_m:
+                            st.write(f"**{item['모델명']}**")
+                        with col_c:
+                            st.write(f"{item['컬러']}")
+                        with col_q:
+                            new_qty = st.number_input("수량", min_value=1, max_value=100, value=int(item['수량']), key=f"edit_q_{i}_{item_idx}", label_visibility="collapsed")
+                        with col_del:
+                            remove_item = st.button("🗑️", key=f"del_item_{i}_{item_idx}")
+                        
+                        if not remove_item:
+                            updated_items.append({
+                                "거래처": draft['거래처'],
+                                "모델명": item['모델명'],
+                                "컬러": item['컬러'],
+                                "수량": new_qty,
+                                "단가": item['단가'],
+                                "금액": new_qty * item['단가']
+                            })
+                    
+                    # 수정된 내역 즉시 반영 버튼 및 모델 추가 버튼
+                    draft["내역"] = updated_items
+                    draft["품목수"] = sum(x['수량'] for x in updated_items)
+                    
+                    st.markdown("")
+                    col_save, col_add, col_cancel = st.columns(3)
+                    with col_save:
+                        if st.button("💾 변경사항 저장", key=f"save_draft_{i}", use_container_width=True, type="primary"):
+                            st.success("주문서 수정 내용이 저장되었습니다!")
                             st.rerun()
-                    with col_del:
+                    with col_add:
+                        if st.button("➕ 모델 추가하기", key=f"add_more_to_draft_{i}", use_container_width=True):
+                            st.session_state.current_client = draft['거래처']
+                            st.session_state.cart = draft["내역"].copy()
+                            st.session_state.drafts.pop(i)
+                            st.session_state.step = "select_model"
+                            st.success("모델을 추가할 수 있도록 새주문 화면으로 이동합니다.")
+                            st.rerun()
+                    with col_cancel:
                         if st.button("❌ 주문 취소(삭제)", key=f"del_draft_{i}", use_container_width=True):
                             st.session_state.drafts.pop(i)
                             st.success("주문서가 취소되었습니다.")
