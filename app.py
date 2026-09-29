@@ -52,7 +52,7 @@ else:
     if 'cart_memo' not in st.session_state:
         st.session_state.cart_memo = ""
 
-    # 공통 CSS 스타일 주입 (버튼 일체형 디자인 최적화)
+    # 공통 CSS 스타일 주입
     st.markdown("""
         <style>
         .main {
@@ -77,7 +77,6 @@ else:
             font-size: 13px;
             color: #aaaaaa;
         }
-        /* 모델 카드 내부 버튼 디자인을 깔끔하게 통일 */
         div.stButton > button {
             border-radius: 10px;
             font-weight: 600;
@@ -197,7 +196,6 @@ else:
             st.markdown("<small style='color: gray;'>소재별 색상이 적용된 아래 카드 버튼을 터치하여 컬러 선택으로 넘어가세요.</small>", unsafe_allow_html=True)
             st.markdown("")
 
-            # [핵심 개선] 제품 설명 카드와 선택 버튼을 하나의 완벽한 카드형 버튼으로 일체화
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
                 material = str(row[material_col]).strip() if material_col else "기타"
@@ -219,11 +217,7 @@ else:
                     box_bg = "#eaeaea"
                     border_c = "#cccccc"
                     badge_c = "#555555"
-
-                # Streamlit 버튼 안에 HTML 정보를 얹어 완벽하게 일체화된 카드 버튼 구현
-                btn_caption = f"🕶️ {model_name}  [{material}]  |  단가: ₩ {price:,}"
                 
-                # 커스텀 스타일 마크다운 카드와 버튼을 타이트하게 밀착
                 st.markdown(f"""
                 <div style="padding: 10px 14px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 10px 10px 0 0; margin-top: 10px; font-weight: 700; color: #111; display: flex; justify-content: space-between; align-items: center;">
                     <span>🕶️ {model_name}</span>
@@ -253,9 +247,17 @@ else:
             
             st.info(f"📍 **거래처:** {st.session_state.current_client} &nbsp;|&nbsp; 📌 **모델:** {st.session_state.selected_model}")
             
-            if st.button("⬅️ 모델 목록으로 돌아가기"):
-                st.session_state.step = "select_model"
-                st.rerun()
+            # [핵심 개선] 컬러 선택 화면 상단에 명확한 뒤로가기 버튼 배치
+            c_back1, c_back2 = st.columns(2)
+            with c_back1:
+                if st.button("⬅️ 다른 모델 다시 고르기", use_container_width=True):
+                    st.session_state.step = "select_model"
+                    st.rerun()
+            with c_back2:
+                if len(st.session_state.cart) > 0:
+                    if st.button("🛒 장바구니로 바로 가기", use_container_width=True, type="primary"):
+                        st.session_state.step = "goto_cart_tab"
+                        st.rerun()
                 
             st.markdown("---")
             st.markdown(f"### [{st.session_state.selected_model}] 컬러별 재고 및 수량 지정")
