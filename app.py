@@ -11,14 +11,22 @@ def load_data():
     try:
         model_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=model"
         color_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=color"
+        client_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=client"
         
         df_models = pd.read_csv(model_url)
         df_colors = pd.read_csv(color_url)
-        return df_models, df_colors
+        
+        # client 탭이 비어있거나 없을 경우 대비 안전 장치
+        try:
+            df_clients = pd.read_csv(client_url)
+        except:
+            df_clients = pd.DataFrame(columns=["거래처명", "적립잔액", "미수금", "특이사항", "미출고예약제품(수량)"])
+            
+        return df_models, df_colors, df_clients
     except Exception as e:
-        return None, None
+        return None, None, None
 
-df_models, df_colors = load_data()
+df_models, df_colors, df_clients = load_data()
 
 if df_models is None or df_colors is None or df_models.empty:
     st.error("⚠️ 구글 시트 데이터를 불러오는 데 실패했습니다. 탭 이름과 공유 설정을 확인해 주세요.")
@@ -97,7 +105,7 @@ else:
     # -------------------------------------------------------------------------
     if nav_choice == "새주문":
         
-        # [단계 1] 기존 거래처 vs 신규 계약 선택 화면
+        # [단계 1] 기존 거래처(client 시트 연동) vs 신규 계약 선택 화면
         if st.session_state.step == "input_client":
             st.markdown("""
                 <div class="brand-header">
@@ -109,24 +117,29 @@ else:
             st.markdown("### 📝 새주문 시작하기")
             st.markdown("발주를 진행할 거래처 유형을 선택해 주세요.")
             
-            # 거래처 유형 라디오 버튼
             client_type = st.radio("거래처 유형", ["기존 거래처 선택", "신규 계약 매장"], horizontal=True)
             
             st.markdown("---")
             
-            # 기존 거래처 목록 수집 (완료된 주문서 및 기본 목록 기반)
+            # 구글 시트 client 탭에서 거래처명 목록 불러오기
             known_clients = set()
+            if df_clients is not None and not df_clients.empty:
+                client_col = df_clients.columns[0] # 첫 번째 열: 거래처명
+                for c_name in df_clients[client_col].dropna().astype(str):
+                    known_clients.add(c_name.strip())
+            
+            # 드래프트나 세션에 있는 거래처도 보조로 추가
             for draft in st.session_state.drafts:
                 if draft.get('거래처'):
                     known_clients.add(draft['거래처'])
-            default_clients = ["글라스안경 세곡점", "아이디어안경 강남점", "룩옵티컬 홍대점"]
-            for dc in default_clients:
-                known_clients.add(dc)
+            
+            if not known_clients:
+                known_clients = {"등록된 거래처가 없습니다 (시트를 확인하세요)"}
             
             selected_target = ""
             
             if client_type == "기존 거래처 선택":
-                st.markdown("#### 🔍 기존 거래처 검색 및 선택")
+                st.markdown("#### 🔍 구글 시트 연동 기존 거래처 선택")
                 selected_target = st.selectbox("거래처 안경원 검색", sorted(list(known_clients)), label_visibility="collapsed")
             else:
                 st.markdown("#### ✍️ 신규 계약 매장명 입력")
@@ -136,7 +149,7 @@ else:
             
             st.markdown("")
             if st.button("👉 주문서 작성 시작", type="primary", use_container_width=True):
-                if not selected_target or selected_target.strip() == "":
+                if not selected_target or selected_target.strip() == "" or "등록된 거래처" in selected_target:
                     st.warning("⚠️ 거래처 안경원 이름을 확인하거나 입력해주세요!")
                 else:
                     st.session_state.current_client = selected_target
@@ -160,7 +173,6 @@ else:
                 
             st.markdown("---")
             
-            # [신규 기능] 텍스트 자동완성 검색바
             st.markdown("### 🔎 모델 직접 검색 (자동완성)")
             model_col = df_models.columns[0]
             material_col = df_models.columns[1] if len(df_models.columns) > 1 else None
@@ -609,37 +621,61 @@ else:
             st.warning("재고 데이터를 불러올 수 없습니다.")
 
     # -------------------------------------------------------------------------
-    # 5. 매장별 히스토리 보기 메뉴
+    # 5. 매장별 히스토리 보기 메뉴 (client 시트 데이터 연동)
     # -------------------------------------------------------------------------
     elif nav_choice == "매장별 히스토리 보기":
         st.title("📊 매장별 거래 히스토리 & 채권 현황")
-        st.markdown("ERP에 등록된 거래처(매장)를 선택하여 그간의 판매 내역, 채권/잔금, 예약출고 제품 및 메모를 확인하세요.")
+        st.markdown("구글 시트(`client` 탭) 및 주문 데이터를 기반으로 적립잔액, 미수금, 특이사항 및 예약출고를 조회합니다.")
         st.markdown("---")
         
-        known_clients = set()
-        for draft in st.session_state.drafts:
-            if draft.get('거래처'):
-                known_clients.add(draft['거래처'])
-        if st.session_state.current_client:
-            known_clients.add(st.session_state.current_client)
-            
-        default_clients = ["글라스안경 세곡점", "아이디어안경 강남점", "룩옵티컬 홍대점"]
-        for dc in default_clients:
-            known_clients.add(dc)
-            
-        selected_client_history = st.selectbox("🔍 조회할 거래처(매장) 선택", sorted(list(known_clients)))
+        # client 시트에서 거래처 목록 추출
+        known_clients = []
+        if df_clients is not None and not df_clients.empty:
+            c_col = df_clients.columns[0]
+            known_clients = df_clients[c_col].dropna().astype(str).tolist()
         
-        if selected_client_history:
+        if not known_clients:
+            known_clients = ["등록된 거래처가 없습니다"]
+            
+        selected_client_history = st.selectbox("🔍 조회할 거래처(매장) 선택", sorted(known_clients))
+        
+        if selected_client_history and selected_client_history != "등록된 거래처가 없습니다":
             st.markdown(f"### 📍 [{selected_client_history}] 상세 현황")
             
-            col_h1, col_h2 = st.columns(2)
+            # client 시트에서 해당 거래처의 행 데이터 찾기
+            client_row = df_clients[df_clients[df_clients.columns[0]].astype(str).str.strip() == selected_client_history]
+            
+            # 기본값 설정
+            ad_balance = "0"
+            mi_suku = "0"
+            sheet_memo = "특이사항 없음"
+            sheet_res = "0"
+            
+            if not client_row.empty:
+                r = client_row.iloc[0]
+                try: ad_balance = str(r.iloc[1]) if len(r) > 1 else "0"
+                except: pass
+                try: mi_suku = str(r.iloc[2]) if len(r) > 2 else "0"
+                except: pass
+                try: sheet_memo = str(r.iloc[3]) if len(r) > 3 else "특이사항 없음"
+                except: pass
+                try: sheet_res = str(r.iloc[4]) if len(r) > 4 else "0"
+                except: pass
+
+            # Metric 카드 표시
+            col_h1, col_h2, col_h3 = st.columns(3)
             with col_h1:
-                st.metric(label="💳 총 채권 금액 (ERP)", value="₩ 1,250,000")
+                st.metric(label="💰 적립 잔액", value=f"{ad_balance}")
             with col_h2:
-                st.metric(label="⚠️ 미결제 잔금", value="₩ 450,000")
+                st.metric(label="⚠️ 미수금 (채권)", value=f"{mi_suku}")
+            with col_h3:
+                st.metric(label="📦 미출고 예약제품(수량)", value=f"{sheet_res} 개")
+                
+            if sheet_memo and sheet_memo != "nan" and sheet_memo != "특이사항 없음":
+                st.info(f"📝 **[시트 등록 특이사항]:** {sheet_memo}")
                 
             st.markdown("---")
-            st.subheader("📦 예약되었으나 미출고된 제품 (예약주문 내역)")
+            st.subheader("📦 실시간 예약 및 미출고 제품 내역")
             
             reserved_items = []
             for draft in st.session_state.drafts:
@@ -654,7 +690,7 @@ else:
                 df_reserved = pd.DataFrame(reserved_items)[['주문시간', '모델명', '컬러', '수량', '금액']]
                 st.dataframe(df_reserved, use_container_width=True)
             else:
-                st.info("💡 현재 미출고된 예약주문 품목이 없습니다.")
+                st.info("💡 현재 앱에서 작성된 미출고 예약주문 품목이 없습니다.")
                 
             st.markdown("---")
             st.subheader("📜 과거 주문 판매 내역 및 특이사항 메모")
