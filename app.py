@@ -108,10 +108,8 @@ else:
                     bg_color = "#eaeaea"  # 진한 회색 톤
                     border_color = "#cccccc"
 
-                # 모델 박스와 선택 버튼을 하나로 통합한 버튼 라벨 구성
                 card_label = f"🕶️ {model_name}   |   소재: {material}   |   단가: ₩ {price:,}"
 
-                # 커스텀 스타일 주입을 위한 마크다운 박스 표시 후 바로 아래 통합 버튼 배치
                 st.markdown(f"""
                 <div style="padding: 10px 14px; background-color: {bg_color}; border: 2px solid {border_color}; border-radius: 8px 8px 0 0; margin-top: 12px; font-weight: bold; color: #111;">
                     {card_label}
@@ -327,16 +325,15 @@ else:
         
         if len(st.session_state.drafts) > 0:
             for i, draft in enumerate(st.session_state.drafts):
-                with st.expander(f"[{draft['시간 ' if '시간 ' in draft else '시간'}] 거래처: {draft['거래처']} (총 {draft['품목수']}개 품목)"):
+                t_str = draft['시간']
+                with st.expander(f"[{t_str}] 거래처: {draft['거래처']} (총 {draft['품목수']}개 품목)"):
                     st.dataframe(pd.DataFrame(draft["내역"]), use_container_width=True)
                     
                     col_edit, col_del = st.columns(2)
                     with col_edit:
                         if st.button("✏️ 이 주문서 수정하기", key=f"edit_draft_{i}", use_container_width=True):
-                            # 주문서 내역을 현재 장바구니로 불러오고 거래처 세팅
                             st.session_state.current_client = draft['거래처']
                             st.session_state.cart = draft['내역'].copy()
-                            # 해당 주문서는 임시 목록에서 제거 (수정 후 재완료하도록)
                             st.session_state.drafts.pop(i)
                             st.success(f"'{draft['거래처']}'의 주문서를 장바구니로 불러왔습니다. 수정 후 다시 완료해주세요!")
                             st.rerun()
