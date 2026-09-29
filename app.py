@@ -16,7 +16,6 @@ def load_data():
         df_models = pd.read_csv(model_url)
         df_colors = pd.read_csv(color_url)
         
-        # client 탭이 비어있거나 없을 경우 대비 안전 장치
         try:
             df_clients = pd.read_csv(client_url)
         except:
@@ -105,7 +104,7 @@ else:
     # -------------------------------------------------------------------------
     if nav_choice == "새주문":
         
-        # [단계 1] 기존 거래처(client 시트 연동) vs 신규 계약 선택 화면
+        # [단계 1] 기존 거래처 vs 신규 계약 선택 화면 (초기값 빈칸 처리)
         if st.session_state.step == "input_client":
             st.markdown("""
                 <div class="brand-header">
@@ -121,42 +120,39 @@ else:
             
             st.markdown("---")
             
-            # 구글 시트 client 탭에서 거래처명 목록 불러오기
-            known_clients = set()
+            known_clients = []
             if df_clients is not None and not df_clients.empty:
-                client_col = df_clients.columns[0] # 첫 번째 열: 거래처명
-                for c_name in df_clients[client_col].dropna().astype(str):
-                    known_clients.add(c_name.strip())
-            
-            # 드래프트나 세션에 있는 거래처도 보조로 추가
-            for draft in st.session_state.drafts:
-                if draft.get('거래처'):
-                    known_clients.add(draft['거래처'])
-            
-            if not known_clients:
-                known_clients = {"등록된 거래처가 없습니다 (시트를 확인하세요)"}
+                c_col = df_clients.columns[0]
+                known_clients = df_clients[c_col].dropna().astype(str).tolist()
             
             selected_target = ""
             
             if client_type == "기존 거래처 선택":
                 st.markdown("#### 🔍 구글 시트 연동 기존 거래처 선택")
-                selected_target = st.selectbox("거래처 안경원 검색", sorted(list(known_clients)), label_visibility="collapsed")
+                if known_clients:
+                    # 기본 선택 인덱스를 아예 첫 항목이 아니라 안내 문구나 빈 상태로 유도하기 위해 플레이스홀더 추가
+                    client_list = ["-- 거래처를 선택하세요 --"] + sorted(known_clients)
+                    selected_dropdown = st.selectbox("거래처 안경원 검색", client_list, label_visibility="collapsed")
+                    if selected_dropdown != "-- 거래처를 선택하세요 --":
+                        selected_target = selected_dropdown
+                else:
+                    st.warning("⚠️ 등록된 거래처가 없습니다. 구글 시트의 client 탭을 확인해 주세요.")
             else:
                 st.markdown("#### ✍️ 신규 계약 매장명 입력")
-                new_input = st.text_input("신규 매장명 입력", placeholder="예: 스타안경원", label_visibility="collapsed")
+                new_input = st.text_input("신규 매장명 입력", value="", placeholder="예: 스타안경원", label_visibility="collapsed")
                 if new_input.strip():
                     selected_target = f"[신규] {new_input.strip()}"
             
             st.markdown("")
             if st.button("👉 주문서 작성 시작", type="primary", use_container_width=True):
-                if not selected_target or selected_target.strip() == "" or "등록된 거래처" in selected_target:
-                    st.warning("⚠️ 거래처 안경원 이름을 확인하거나 입력해주세요!")
+                if not selected_target or selected_target.strip() == "":
+                    st.warning("⚠️ 거래처 안경원 이름을 선택하거나 입력해주세요!")
                 else:
                     st.session_state.current_client = selected_target
                     st.session_state.step = "select_model"
                     st.rerun()
 
-        # [단계 2] 모델 선택 화면 (텍스트 자동완성 검색바 추가)
+        # [단계 2] 모델 선택 화면
         elif st.session_state.step == "select_model":
             st.markdown("""
                 <div class="brand-header">
@@ -621,14 +617,13 @@ else:
             st.warning("재고 데이터를 불러올 수 없습니다.")
 
     # -------------------------------------------------------------------------
-    # 5. 매장별 히스토리 보기 메뉴 (client 시트 데이터 연동)
+    # 5. 매장별 히스토리 보기 메뉴
     # -------------------------------------------------------------------------
     elif nav_choice == "매장별 히스토리 보기":
         st.title("📊 매장별 거래 히스토리 & 채권 현황")
         st.markdown("구글 시트(`client` 탭) 및 주문 데이터를 기반으로 적립잔액, 미수금, 특이사항 및 예약출고를 조회합니다.")
         st.markdown("---")
         
-        # client 시트에서 거래처 목록 추출
         known_clients = []
         if df_clients is not None and not df_clients.empty:
             c_col = df_clients.columns[0]
@@ -642,10 +637,8 @@ else:
         if selected_client_history and selected_client_history != "등록된 거래처가 없습니다":
             st.markdown(f"### 📍 [{selected_client_history}] 상세 현황")
             
-            # client 시트에서 해당 거래처의 행 데이터 찾기
             client_row = df_clients[df_clients[df_clients.columns[0]].astype(str).str.strip() == selected_client_history]
             
-            # 기본값 설정
             ad_balance = "0"
             mi_suku = "0"
             sheet_memo = "특이사항 없음"
@@ -662,7 +655,6 @@ else:
                 try: sheet_res = str(r.iloc[4]) if len(r) > 4 else "0"
                 except: pass
 
-            # Metric 카드 표시
             col_h1, col_h2, col_h3 = st.columns(3)
             with col_h1:
                 st.metric(label="💰 적립 잔액", value=f"{ad_balance}")
