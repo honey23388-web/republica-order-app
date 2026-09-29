@@ -70,7 +70,7 @@ else:
                     st.session_state.step = "select_model"
                     st.rerun()
 
-        # [단계 2] 모델 선택 화면 (소재별 박스 색상 적용)
+        # [단계 2] 모델 선택 화면 (통합 카드 버튼 + 진한 소재별 색상)
         elif st.session_state.step == "select_model":
             st.title("👓 REPUBLICA B2B 주문 시스템")
             st.info(f"📍 **현재 거래처:** {st.session_state.current_client}")
@@ -81,7 +81,7 @@ else:
                 
             st.markdown("---")
             st.markdown("### 제품 모델 선택")
-            st.markdown("<small style='color: gray;'>소재별로 색상이 구분된 모델 박스를 확인하고 선택하세요.</small>", unsafe_allow_html=True)
+            st.markdown("<small style='color: gray;'>원하시는 모델 박스를 터치하여 컬러 선택 단계로 넘어가세요.</small>", unsafe_allow_html=True)
             st.markdown("")
             
             model_col = df_models.columns[0]
@@ -96,28 +96,29 @@ else:
                 except:
                     price = 33000
 
-                # [소재별 박스 배경색 및 테두리 설정]
+                # [소재별 박스 배경색 및 테두리 설정 - 확실히 더 진한 톤 적용]
                 mat_lower = material.lower()
                 if "티타늄" in mat_lower or "아세테이트" in mat_lower:
-                    bg_color = "#fbf6f0"  # 옅은 브라운색
-                    border_color = "#e6d5c3"
+                    bg_color = "#faeddf"  # 진한 브라운/베이지 톤
+                    border_color = "#d9b89a"
                 elif "콤비" in mat_lower:
-                    bg_color = "#f0f7f0"  # 옅은 그린색
-                    border_color = "#cce3cc"
+                    bg_color = "#e2f2e2"  # 진한 그린 톤
+                    border_color = "#9ecf9e"
                 else:
-                    bg_color = "#f4f4f4"  # 옅은 회색
-                    border_color = "#e0e0e0"
+                    bg_color = "#eaeaea"  # 진한 회색 톤
+                    border_color = "#cccccc"
 
-                # HTML 카드 박스 렌더링
+                # 모델 박스와 선택 버튼을 하나로 통합한 버튼 라벨 구성
+                card_label = f"🕶️ {model_name}   |   소재: {material}   |   단가: ₩ {price:,}"
+
+                # 커스텀 스타일 주입을 위한 마크다운 박스 표시 후 바로 아래 통합 버튼 배치
                 st.markdown(f"""
-                <div style="padding: 12px 16px; background-color: {bg_color}; border: 1px solid {border_color}; border-radius: 8px 8px 0 0; margin-top: 10px;">
-                    <b style="font-size: 16px; color: #222;">🕶️ {model_name}</b><br>
-                    <span style="font-size: 13px; color: #555;">소재: <b>{material}</b> &nbsp;|&nbsp; 단가: <b>₩ {price:,}</b></span>
+                <div style="padding: 10px 14px; background-color: {bg_color}; border: 2px solid {border_color}; border-radius: 8px 8px 0 0; margin-top: 12px; font-weight: bold; color: #111;">
+                    {card_label}
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # 선택 버튼
-                if st.button(f"👉 [{model_name}] 선택하기", key=f"btn_model_{idx}", use_container_width=True, type="primary"):
+                if st.button(f"👉 [{model_name}] 선택하고 컬러 고르기", key=f"btn_model_{idx}", use_container_width=True, type="primary"):
                     st.session_state.selected_model = model_name
                     st.session_state.unit_price = price
                     st.session_state.step = "select_color"
@@ -317,25 +318,33 @@ else:
             st.info("장바구니가 비어 있습니다. '새주문' 메뉴에서 제품을 담아주세요.")
 
     # -------------------------------------------------------------------------
-    # 3. 주문서 메뉴
+    # 3. 주문서 메뉴 (취소 및 수정 기능 탑재)
     # -------------------------------------------------------------------------
     elif nav_choice == "주문서":
         st.title("📋 작성된 주문서 리스트")
-        st.markdown("완료된 주문서 목록을 확인하고, 필요시 주문을 취소할 수 있습니다.")
+        st.markdown("완료된 주문서 목록을 확인하고, 필요시 **수정**하거나 **취소**할 수 있습니다.")
         st.markdown("---")
         
         if len(st.session_state.drafts) > 0:
             for i, draft in enumerate(st.session_state.drafts):
-                col_exp, col_btn = st.columns([5, 1])
-                with col_exp:
-                    with st.expander(f"[{draft['시간']}] 거래처: {draft['거래처']} (총 {draft['품목수']}개 품목)"):
-                        st.dataframe(pd.DataFrame(draft["내역"]), use_container_width=True)
-                with col_btn:
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    if st.button("❌ 취소", key=f"del_draft_{i}"):
-                        st.session_state.drafts.pop(i)
-                        st.success("주문서가 취소되었습니다.")
-                        st.rerun()
+                with st.expander(f"[{draft['시간 ' if '시간 ' in draft else '시간'}] 거래처: {draft['거래처']} (총 {draft['품목수']}개 품목)"):
+                    st.dataframe(pd.DataFrame(draft["내역"]), use_container_width=True)
+                    
+                    col_edit, col_del = st.columns(2)
+                    with col_edit:
+                        if st.button("✏️ 이 주문서 수정하기", key=f"edit_draft_{i}", use_container_width=True):
+                            # 주문서 내역을 현재 장바구니로 불러오고 거래처 세팅
+                            st.session_state.current_client = draft['거래처']
+                            st.session_state.cart = draft['내역'].copy()
+                            # 해당 주문서는 임시 목록에서 제거 (수정 후 재완료하도록)
+                            st.session_state.drafts.pop(i)
+                            st.success(f"'{draft['거래처']}'의 주문서를 장바구니로 불러왔습니다. 수정 후 다시 완료해주세요!")
+                            st.rerun()
+                    with col_del:
+                        if st.button("❌ 주문 취소(삭제)", key=f"del_draft_{i}", use_container_width=True):
+                            st.session_state.drafts.pop(i)
+                            st.success("주문서가 취소되었습니다.")
+                            st.rerun()
         else:
             st.info("작성된 주문서 내역이 없습니다.")
 
