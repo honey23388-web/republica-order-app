@@ -111,7 +111,6 @@ else:
                         st.warning("⚠️ 체크박스로 선택된 컬러가 없습니다.")
                     else:
                         for item in color_inputs:
-                            # [핵심 로직] 이미 장바구니에 동일한 [거래처, 모델명, 컬러]가 있는지 검사
                             existing_item = None
                             for cart_item in st.session_state.cart:
                                 if (cart_item["거래처"] == st.session_state.current_client and 
@@ -121,11 +120,9 @@ else:
                                     break
                             
                             if existing_item:
-                                # 이미 존재하면 수량과 금액만 누적 합산
                                 existing_item["수량"] += item["수량"]
                                 existing_item["금액"] = existing_item["수량"] * unit_price
                             else:
-                                # 없으면 새로 추가
                                 st.session_state.cart.append({
                                     "거래처": st.session_state.current_client,
                                     "모델명": selected_model_name,
@@ -137,12 +134,19 @@ else:
                                 
                         st.success(f"🎉 **{selected_model_name}** 발주 내역이 장바구니에 안전하게 반영되었습니다! (동일 상품은 수량이 자동 합산됩니다)")
 
-        # 현재까지 담긴 장바구니 요약 미리보기
+        # 현재까지 담긴 장바구니 요약 및 개별 삭제 인터페이스
         if len(st.session_state.cart) > 0:
             st.markdown("---")
             st.markdown(f"### 🛒 현재 장바구니 현황 (총 {len(st.session_state.cart)}개 품목)")
-            temp_cart_df = pd.DataFrame(st.session_state.cart)
-            st.dataframe(temp_cart_df[["모델명", "컬러", "수량", "금액"]], use_container_width=True)
+            
+            for idx, item in enumerate(st.session_state.cart):
+                col_info, col_del = st.columns([5, 1])
+                with col_info:
+                    st.markdown(f"- **{item['모델명']}** | {item['컬러']} | 수량: **{item['수량']}개** (₩ {item['금액']:,})")
+                with col_del:
+                    if st.button("❌ 삭제", key=f"del_cart_{idx}"):
+                        st.session_state.cart.pop(idx)
+                        st.rerun()
 
     elif menu == "장바구니 / 임시저장":
         st.title("🛒 장바구니 및 임시저장")
@@ -150,12 +154,25 @@ else:
         
         if len(st.session_state.cart) > 0:
             cart_df = pd.DataFrame(st.session_state.cart)
-            st.dataframe(cart_df, use_container_width=True)
-            total_price = cart_df["금액"].sum()
+            
+            # 장바구니 목록과 개별 삭제 버튼 제공
+            for idx, item in enumerate(st.session_state.cart):
+                c1, c2, c3 = st.columns([4, 2, 1])
+                with c1:
+                    st.write(f"**{item['모델명']}** / {item['컬러']}")
+                with c2:
+                    st.write(f"수량: {item['수량']}개 (₩ {item['금액']:,})")
+                with c3:
+                    if st.button("🗑️ 삭제", key=f"cart_page_del_{idx}"):
+                        st.session_state.cart.pop(idx)
+                        st.rerun()
+                        
+            st.markdown("---")
+            total_price = sum(item['금액'] for item in st.session_state.cart)
             st.markdown(f"### 💰 총 주문 금액: **₩ {total_price:,}**")
             
             st.markdown("")
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
                 if st.button("💾 임시저장 (Draft)", use_container_width=True):
                     st.session_state.drafts.append({
@@ -166,12 +183,18 @@ else:
                     })
                     st.success("임시저장되었습니다.")
                     st.session_state.cart = []
+                    st.rerun()
             with col2:
                 if st.button("🚀 최종 주문 완료 (발주 전송)", type="primary", use_container_width=True):
                     st.success("주문이 성공적으로 전송되었습니다!")
                     st.session_state.cart = []
+                    st.rerun()
+            with col3:
+                if st.button("🧹 장바구니 비우기", use_container_width=True):
+                    st.session_state.cart = []
+                    st.rerun()
         else:
-            st.info(" 장바구니가 비어 있습니다. '새주문' 메뉴에서 제품을 담아주세요.")
+            st.info("장바구니가 비어 있습니다. '새주문' 메뉴에서 제품을 담아주세요.")
 
     elif menu == "주문서 현황":
         st.title("📊 주문서 현황")
