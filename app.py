@@ -28,14 +28,14 @@ def load_data():
         try:
             df_clients = pd.read_csv(client_url)
         except:
-            df_clients = pd.DataFrame(columns=["거래처명", "적립잔액", "미수금", "특이사항", "미출고예약제품(수량)"])
+            df_clients = pd.DataFrame(columns=["거래처명", "적립잔액", "미수금", "특이사항", "미출고예약제품(수량)", "매장코드"])
             
         return df_models, df_colors, df_clients
     except Exception as e:
         return None, None, None
 
-# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (ECERP 경로 포함 공식 규격 반영)
-def send_order_to_ecount(cart_items, client_name, memo, df_colors):
+# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (F열 매장코드 매핑 반영)
+def send_order_to_ecount(cart_items, client_name, memo, df_colors, df_clients):
     try:
         # 1단계: ZONE 조회
         zone_res = requests.post(
@@ -76,6 +76,20 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
             st.error(f"이카운트 로그인 실패: {login_data}")
             return False
             
+        # 💡 매장명으로 client 시트에서 F열(매장코드) 찾아 매핑하기
+        cust_cd = client_name
+        try:
+            clean_target = str(client_name).replace("[신규]", "").strip().upper()
+            if df_clients is not None and not df_clients.empty:
+                for _, r in df_clients.iterrows():
+                    sheet_c_name = str(r.iloc[0]).strip().upper()
+                    if sheet_c_name == clean_target:
+                        if len(r) > 5 and pd.notna(r.iloc[5]):
+                            cust_cd = str(r.iloc[5]).strip()
+                        break
+        except:
+            pass
+
         # 3단계: 판매주문서 입력 데이터 구성
         today_str = datetime.datetime.now().strftime("%Y%m%d")
         details = []
@@ -116,15 +130,14 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
             "Data": {
                 "UID": "",
                 "IO_Date": today_str,
-                "CustCd": str(client_name),
+                "CustCd": str(cust_cd),  # 맵핑된 정확한 이카운트 매장 코드 전송
                 "Remarks": str(memo),
                 "Details": details
             }
         }
         
-        # 올바른 ECERP 경로가 포함된 판매주문서 입력 엔드포인트 호출
         order_res = requests.post(
-            f"{base_url}/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}",
+            f"{base_url}/OAPI/V2/Sale/SaveSalesOrder",
             json=order_payload,
             timeout=10
         )
@@ -165,7 +178,7 @@ def process_final_order(cart_items, client_name, memo):
         except:
             pass
             
-    ecount_success = send_order_to_ecount(cart_items, client_name, memo, df_colors)
+    ecount_success = send_order_to_ecount(cart_items, client_name, memo, df_colors, df_clients)
     return google_success, ecount_success
 
 if df_models is None or df_models.empty:
@@ -392,7 +405,7 @@ else:
                 if "티타늄" in mat_lower: icon_prefix = "🔩"
                 elif "아세테이트" in mat_lower: icon_prefix = "🏷️"
                 elif "콤비" in mat_lower: icon_prefix = "🔗"
-                else: icon_prefix = "🕶️️"
+                else: icon_prefix = "🕶️"
 
                 btn_label = f"{icon_prefix} {model_name}"
                 if st.button(btn_label, key=f"mat_icon_btn_{idx}", use_container_width=True):
@@ -411,7 +424,7 @@ else:
                 </div>
             """, unsafe_allow_html=True)
             
-            if st.button("⬅️️ 모델 다시 고르기", use_container_width=True):
+            if st.button("⬅️ 모델 다시 고르기", use_container_width=True):
                 st.session_state.step = "select_model"
                 st.rerun()
 
@@ -435,7 +448,7 @@ else:
                 st.warning(f"⚠️ 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
                 if st.session_state.pending_reservation_items:
-                    st.warning("⚠️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
+                    st.warning("⚠️️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
                     with st.form("reservation_confirm_form"):
                         st.write("재고가 없는 제품입니다. 예약주문으로 하시겠습니까?")
                         for p_item in st.session_state.pending_reservation_items:
@@ -693,7 +706,7 @@ else:
                         with col_q:
                             new_qty = st.number_input("수량", min_value=1, max_value=100, value=int(item['수량']), key=f"edit_q_{i}_{item_idx}", label_visibility="collapsed")
                         with col_del:
-                            remove_item = st.button("🗑️️", key=f"del_item_{i}_{item_idx}")
+                            remove_item = st.button("🗑️", key=f"del_item_{i}_{item_idx}")
                         
                         if not remove_item:
                             updated_items.append({
