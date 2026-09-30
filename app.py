@@ -28,7 +28,7 @@ def load_data():
 df_models, df_colors, df_clients = load_data()
 
 if df_models is None or df_models.empty:
-    st.error("⚠️️ 구글 시트 데이터를 불러오는 데 실패했습니다.")
+    st.error("⚠️ 구글 시트 데이터를 불러오는 데 실패했습니다.")
     st.info("💡 해결 방법:\n1. 구글 시트 링크 및 공유 설정을 확인해 주세요.\n2. 탭 이름이 **model**, **color**, **client**인지 확인해 주세요.")
 else:
     if 'cart' not in st.session_state:
@@ -46,42 +46,36 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 하단 아이콘 Base64 데이터
-    icon_new = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAsNJREFUeJztW81qG0UQvjOz2lW8S3O2C22iN0qCHjrwqge/QD9DP0A/Rj9AP8Q1OimQhBBLwSRElM6m2W3t3p29vTNDt0oN3s352WbW3T1zzsyj0Y3H140A7K6tGzJb1l7YvF1z989Hq6vrbT9vA4A0b2+vXN7tNpvzM28d3t3X12t3d7e7939/d/r6/v/d39pP+B7+6+/v1wOHz7+vr6779vAGwW8wN2dF1fn//83Lq+vg747g7g7u7XFwB+Pj292n01Nxe/vr4+P1vfANR//drt7u4mAPQOAKz3+4H+2L8C+P776+q4gP0LAKb3+3t+AIAvAH/4B8AA/n5/AKj7c8DvD3b/AfwP+PtfgP8LwO8/APwG+P/x4/+AfgcA777/gLrfAQA79tY0YAAAABJRU5ErkJggg=="
-    icon_cart = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAuJJREFUeJztW71v20YQvvOdXUqT51g8R9tYIdrVwT1K9GvQf4j2r9An6B8gSRAkTbpwS9Cgnf7BghK+dE7xIeO6ncfu2r7t+7KqC61Iks6R+P3O7s7ujruH7z//6w8A3Zqbf25tffr+/fuvv15qV30J8v2d9f30/vXbS27P3JvFp58fjv60CgC9O78GgA7Z//X//g7Qd74fA/Y9+L07v5jH748A3p//r93P787e3N6+vn70q66uTvtP3d3fv7//+vvPfwFzZ3ZuvTvfXb29fW+v/A5Q9P00v8n/AIChwO3t/f2ffy8C/m77B3p3+wP8310/AHg//wMAnv4M2N0BwL4vAKj7X8Dv7//u7//A7r8C2N0A6O8D6O4AANz//v7t7wEAL6B7D6C7fwDwnQCAvf37d00fAOB//w8Am/3a/wIA7O7oBwCwv68AALu7uvD78w/Ab3d9XwL833t/P4C9v/4C8Puvv/8CwPfvD+C7r/8D+O7rwG939z8AAMB3AHz/fgAAv48LAPj+fQC35+fvBwDz/38AQPAvAPDvDwAAv++vC/75/a9/f7+/v/n+/j6P30j9HwBeLgD05/ffu/O7i77+/r99AOD//8fX19fHx+vr59fHAPz1j4+ffwM8v778P59++vj4+Pr+/v8bYADvX19/f5/r7/8D8Pj4uD//7+/v3x/rL8Dv//8H8D5gD5gD0AOmA+jB6wHz/vLAAuY1ALb6C4ALmPufv7h/A3ZfANjrfwDsLwAc/wBwvP8DwN5vAOgP0A2D35//r4cE2N3Z/wM8fN8eAFbvXzM8v22+f9pLvv55Z/wFkPz+lK1v3gAAAABJRU5ErkJggg=="
-    icon_list = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAsNJREFUeJztW81qG0UQvjOz2lW8S3O2C22iN0qCHjrwqge/QD9DP0A/Rj9AP8Q1OimQhBBLwSRElM6m2W3t3p29vTNDt0oN3s352WbW3T1zzsyj0Y3H140A7K6tGzJb1l7YvF1z989Hq6vrbT9vA4A0b2+vXN7tNpvzM28d3t3X12t3d7e7939/d/r6/v/d39pP+B7+6+/v1wOHz7+vr6779vAGwW8wN2dF1fn//83Lq+vg747g7g7u7XFwB+Pj292n01Nxe/vr4+P1vfANR//drt7u4mAPQOAKz3+4H+2L8C+P776+q4gP0LAKb3+3t+AIAvAH/4B8AA/n5/AKj7c8DvD3b/AfwP+PtfgP8LwO8/APwG+P/x4/+AfgcA777/gLrfAQA79tY0YAAAABJRU5ErkJggg=="
-    icon_sync = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAsNJREFUeJztW81qG0UQvjOz2lW8S3O2C22iN0qCHjrwqge/QD9DP0A/Rj9AP8Q1OimQhBBLwSRElM6m2W3t3p29vTNDt0oN3s352WbW3T1zzsyj0Y3H140A7K6tGzJb1l7YvF1z989Hq6vrbT9vA4A0b2+vXN7tNpvzM28d3t3X12t3d7e7939/d/r6/v/d39pP+B7+6+/v1wOHz7+vr6779vAGwW8wN2dF1fn//83Lq+vg747g7g7u7XFwB+Pj292n01Nxe/vr4+P1vfANR//drt7u4mAPQOAKz3+4H+2L8C+P776+q4gP0LAKb3+3t+AIAvAH/4B8AA/n5/AKj7c8DvD3b/AfwP+PtfgP8LwO8/APwG+P/x4/+AfgcA777/gLrfAQA79tY0YAAAABJRU5ErkJggg=="
-
-    # 모바일 최적화 및 커스텀 하단 탭 스타일 주입 (f-string 중괄호 이중 {{ }} 처리 적용)
-    st.markdown(f"""
+    # 모바일 최적화 및 이미지 탭 바 CSS 주입
+    st.markdown("""
         <style>
-        .block-container {{
+        .block-container {
             padding-top: 2.8rem !important;
             padding-bottom: 7rem !important;
-        }}
-        .main {{
+        }
+        .main {
             background-color: #fcfcfc;
-        }}
-        .brand-header {{
+        }
+        .brand-header {
             padding: 8px;
             background: linear-gradient(135deg, #111111, #333333);
             color: white;
             border-radius: 8px;
             text-align: center;
             margin-bottom: 10px;
-        }}
-        .brand-header h1 {{
+        }
+        .brand-header h1 {
             margin: 0;
             font-size: 19px;
             font-weight: 700;
             letter-spacing: 1px;
-        }}
-        .brand-header p {{
+        }
+        .brand-header p {
             margin: 2px 0 0 0;
             font-size: 11px;
             color: #aaaaaa;
-        }}
-        .client-highlight-box {{
+        }
+        .client-highlight-box {
             background-color: #111111;
             color: #ffffff;
             padding: 14px 16px;
@@ -92,19 +86,19 @@ else:
             letter-spacing: 0.5px;
             margin-bottom: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }}
-        div.stButton > button {{
+        }
+        div.stButton > button {
             border-radius: 8px;
             font-weight: 700;
             height: 48px;
             font-size: 15px;
             transition: all 0.2s ease-in-out;
-        }}
-        div.stButton > button:hover {{
+        }
+        div.stButton > button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }}
-        .fixed-bottom-dock {{
+        }
+        .fixed-bottom-dock {
             position: fixed;
             bottom: 0;
             left: 0;
@@ -117,8 +111,8 @@ else:
             display: flex;
             justify-content: space-around;
             align-items: center;
-        }}
-        .tab-btn-custom {{
+        }
+        .tab-btn-custom {
             background: none;
             border: none;
             display: flex;
@@ -129,12 +123,12 @@ else:
             font-weight: 700;
             color: #333;
             text-decoration: none;
-        }}
-        .tab-btn-custom img {{
-            width: 28px;
-            height: 28px;
+        }
+        .tab-btn-custom img {
+            width: 26px;
+            height: 26px;
             margin-bottom: 3px;
-        }}
+        }
         </style>
     """, unsafe_allow_html=True)
     
@@ -296,7 +290,7 @@ else:
                 </div>
             """, unsafe_allow_html=True)
             
-            if st.button("⬅️️ 모델 다시 고르기", use_container_width=True):
+            if st.button("⬅️ 모델 다시 고르기", use_container_width=True):
                 st.session_state.step = "select_model"
                 st.rerun()
 
@@ -321,7 +315,7 @@ else:
                 st.warning(f"⚠️ 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
                 if st.session_state.pending_reservation_items:
-                    st.warning("⚠️️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
+                    st.warning("⚠️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
                     
                     with st.form("reservation_confirm_form"):
                         st.write("재고가 없는 제품입니다. 예약주문으로 하시겠습니까?")
@@ -511,7 +505,7 @@ else:
                 with c2:
                     st.write(f"{item['수량']}개 (₩ {item['금액']:,})")
                 with c3:
-                    if st.button("🗑️", key=f"cart_page_del_{idx}"):
+                    if st.button("🗑️️", key=f"cart_page_del_{idx}"):
                         st.session_state.cart.pop(idx)
                         st.rerun()
                         
@@ -720,10 +714,28 @@ else:
                 st.metric(label="총 판매수량", value=f"{total_qty:,}개")
 
     # -------------------------------------------------------------------------
-    # [하단 고정 커스텀 이미지 아이콘 탭 바]
+    # [하단 고정 이미지 아이콘 탭 바 (assets 폴더 경로 직접 참조)]
     # -------------------------------------------------------------------------
     cart_badge_str = f" ({cart_count})" if cart_count > 0 else ""
     
+    st.markdown(f"""
+        <div class="fixed-bottom-dock">
+            <button class="tab-btn-custom" onclick="window.location.href='/?tab=new';">
+                <img src="app/static/new.png" onerror="this.src='https://raw.githubusercontent.com/honey23388-web/republica-order-app/main/assets/new.png'" />새주문
+            </button>
+            <button class="tab-btn-custom" onclick="window.location.href='/?tab=cart';">
+                <img src="app/static/cart.png" onerror="this.src='https://raw.githubusercontent.com/honey23388-web/republica-order-app/main/assets/cart.png'" />장바구니{cart_badge_str}
+            </button>
+            <button class="tab-btn-custom" onclick="window.location.href='/?tab=list';">
+                <img src="app/static/list.png" onerror="this.src='https://raw.githubusercontent.com/honey23388-web/republica-order-app/main/assets/list.png'" />주문서
+            </button>
+            <button class="tab-btn-custom" onclick="window.location.reload();">
+                <img src="app/static/sync.png" onerror="this.src='https://raw.githubusercontent.com/honey23388-web/republica-order-app/main/assets/sync.png'" />새로고침
+            </button>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # 파이썬 네이티브 하단 버튼 (탭 클릭 상태 연동 백업용)
     st.markdown("---")
     d1, d2, d3, d4 = st.columns(4)
     with d1:
