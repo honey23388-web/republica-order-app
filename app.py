@@ -46,12 +46,13 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 및 하단 버튼 가로 정렬 CSS 추가
+    # 모바일 최적화 및 하단 버튼 가로 정렬(스크롤바 제거) CSS
     st.markdown("""
         <style>
         .block-container {
             padding-top: 2.8rem !important;
             padding-bottom: 3rem !important;
+            overflow-x: hidden !important; /* 전체 화면 가로 스크롤 원천 차단 */
         }
         .main {
             background-color: #fcfcfc;
@@ -99,15 +100,22 @@ else:
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         
-        /* 🌟 하단 네비게이션 가로 정렬 강제 유지 (줄바꿈 방지) 🌟 */
+        /* 🌟 하단 네비게이션 가로 정렬 (스크롤바 완벽 해결) 🌟 */
         div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) div[data-testid="stHorizontalBlock"] {
+            display: flex !important;
             flex-direction: row !important;
             flex-wrap: nowrap !important;
+            gap: 4px !important; /* 여백을 최소화하여 넘침 방지 */
+            width: 100% !important;
         }
         div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) div[data-testid="column"] {
-            width: 25% !important;
-            flex: 1 1 25% !important;
-            min-width: 0 !important; /* 버튼이 줄어들 수 있도록 허용 */
+            flex: 1 1 0px !important; /* 4등분 균등 분배 */
+            width: auto !important;
+            min-width: 0 !important; /* 창이 좁아져도 버튼이 찌그러지며 줄어들게 허용 */
+        }
+        div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) .stButton > button {
+            padding: 0 !important; /* 버튼 내부 좌우 여백을 없애서 좁은 폰에서도 한 줄로 유지 */
+            font-size: 1.2rem !important; 
         }
         </style>
     """, unsafe_allow_html=True)
@@ -694,13 +702,12 @@ else:
                 st.metric(label="총 판매수량", value=f"{total_qty:,}개")
 
     # -------------------------------------------------------------------------
-    # 하단 이모지 네비게이션 버튼 (화면 축소 시 세로 정렬 방지 적용 완료)
+    # 하단 이모지 네비게이션 버튼 (화면 축소 시 세로 정렬 및 스크롤바 방지 적용 완료)
     # -------------------------------------------------------------------------
     cart_badge_str = f" ({cart_count})" if cart_count > 0 else ""
     
     st.markdown("---")
     
-    # 해당 구역만을 위한 앵커 삽입 (위의 CSS와 연동되어 가로 25% 비율을 강제합니다)
     with st.container():
         st.markdown('<div id="bottom-nav-anchor"></div>', unsafe_allow_html=True)
         d1, d2, d3, d4 = st.columns(4)
