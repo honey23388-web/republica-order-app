@@ -34,7 +34,7 @@ def load_data():
     except Exception as e:
         return None, None, None
 
-# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (SESSION_ID 추출 경로 수정)
+# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (URI 경로 수정 반영)
 def send_order_to_ecount(cart_items, client_name, memo, df_colors):
     try:
         # 1단계: ZONE 조회
@@ -49,24 +49,22 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
             st.error(f"이카운트 Zone 조회 실패: {zone_data}")
             return False
             
-        zone = zone_info.get("ZONE", "CC")
+        zone = str(zone_info.get("ZONE", "CC")).lower()
+        base_url = f"https://sboapi{zone}.ecount.com"
         
         # 2단계: 로그인 (세션 발급)
-        login_url = f"https://sboapi{zone}.ecount.com/OAPI/V2/OAPILogin"
         login_res = requests.post(
-            login_url,
+            f"{base_url}/OAPI/V2/OAPILogin",
             json={
                 "COM_CODE": ECOUNT_COM_CODE,
                 "USER_ID": ECOUNT_USER_ID,
                 "API_CERT_KEY": ECOUNT_API_KEY,
-                "ZONE": zone,
+                "ZONE": zone.upper(),
                 "LAN_TYPE": "ko-KR"
             },
             timeout=5
         )
         login_data = login_res.json()
-        
-        # 💡 정확한 세션 ID 경로 추출 (Data -> Datas -> SESSION_ID)
         login_data_block = login_data.get("Data", {})
         session_id = (
             login_data_block.get("Datas", {}).get("SESSION_ID") or 
@@ -124,9 +122,9 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
             }
         }
         
-        order_url = f"https://sboapi{zone}.ecount.com/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}"
+        # 올바른 판매주문서 입력 엔드포인트 URL 조합
         order_res = requests.post(
-            order_url,
+            f"{base_url}/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}",
             json=order_payload,
             timeout=10
         )
