@@ -34,8 +34,8 @@ def load_data():
     except Exception as e:
         return None, None, None
 
-# 🌟 이카운트 ERP '판매주문서 입력' 자동 전송 함수
-def send_order_to_ecount(cart_items, client_name, memo):
+# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (시트의 이카운트 코드 매핑 적용)
+def send_order_to_ecount(cart_items, client_name, memo, df_colors):
     try:
         # 1단계: ZONE 조회
         zone_res = requests.post(
@@ -66,14 +66,34 @@ def send_order_to_ecount(cart_items, client_name, memo):
         if not session_id:
             return False
             
-        # 3단계: 판매주문서 입력 (SaveSalesOrder) 데이터 구성 및 전송
+        # 3단계: 판매주문서 입력 데이터 구성
         today_str = datetime.datetime.now().strftime("%Y%m%d")
         details = []
         
         for idx, item in enumerate(cart_items):
+            # 품목 코드 매핑 찾기 (color 시트 기준)
+            prod_cd = item['모델명'] # 기본값
+            try:
+                m_clean = str(item['모델명']).split('(')[0].strip().upper()
+                c_clean = str(item['컬러']).strip().upper()
+                
+                # color 시트에서 모델명과 컬러가 모두 일치하는 행의 E열(이카운트코드) 탐색
+                for _, r in df_colors.iterrows():
+                    row_model = str(r.iloc[0]).split('(')[0].strip().upper()
+                    row_col_code = str(r.iloc[1]).strip().upper()
+                    row_col_name = str(r.iloc[2]).strip().upper()
+                    row_full_col = f"{row_col_code} / {row_col_name}".strip(" /")
+                    
+                    if row_model == m_clean and (row_col_code in c_clean or row_col_name in c_clean or row_full_col in c_clean):
+                        if len(r) > 4 and pd.notna(r.iloc[4]):
+                            prod_cd = str(r.iloc[4]).strip()
+                            break
+            except:
+                pass
+
             details.append({
                 "LineNo": idx + 1,
-                "ProdCd": str(item['모델명']),
+                "ProdCd": str(prod_cd),       # 맵핑된 정확한 이카운트 품목 코드 전송
                 "ProdDes": str(item['컬러']),
                 "Qty": float(item['수량']),
                 "Price": float(item['단가']),
@@ -107,6 +127,8 @@ def send_order_to_ecount(cart_items, client_name, memo):
     except Exception as e:
         return False
 
+df_models, df_colors, df_clients = load_data()
+
 # 구글 시트 + 이카운트 주문서 전송 동시 진행 함수
 def process_final_order(cart_items, client_name, memo):
     google_success = False
@@ -131,10 +153,8 @@ def process_final_order(cart_items, client_name, memo):
         except:
             pass
             
-    ecount_success = send_order_to_ecount(cart_items, client_name, memo)
+    ecount_success = send_order_to_ecount(cart_items, client_name, memo, df_colors)
     return google_success, ecount_success
-
-df_models, df_colors, df_clients = load_data()
 
 if df_models is None or df_models.empty:
     st.error("⚠️ 구글 시트 데이터를 불러오는 데 실패했습니다.")
