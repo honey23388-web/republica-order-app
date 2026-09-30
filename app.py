@@ -227,7 +227,7 @@ else:
             st.markdown("---")
             st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 8px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
             
-            # 🔥 순수 HTML Flexbox를 이용해 왼쪽(정보)과 오른쪽([선택] 버튼)을 완벽하게 가로배치
+            # 🔥 HTML Flexbox로 모델 정보와 선택 버튼을 하나의 가로 행에 완벽하게 결합
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
                 material = str(row[material_col]).strip() if material_col else "기타"
@@ -250,20 +250,21 @@ else:
                     border_c = "#cccccc"
                     badge_c = "#555555"
 
-                # 한 행(Row) 안에 정보 카드와 선택 버튼을 동시에 렌더링
-                cols = st.columns([3.2, 1.1])
-                with cols[0]:
+                # 좌우 가로배치 렌더링 컨테이너
+                c_info, c_btn = st.columns([2.7, 1])
+                with c_info:
                     st.markdown(f"""
-                    <div style="padding: 10px 12px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 8px; height: 48px; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
-                        <div style="font-size: 13px; font-weight: 700; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🕶️ {model_name}</div>
+                    <div style="padding: 9px 12px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 8px; height: 50px; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
+                        <div style="font-size: 13px; font-weight: 700; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🕶️ {model_name}</div>
                         <div style="display: flex; gap: 6px; align-items: center; margin-top: 2px; font-size: 11px;">
                             <span style="background-color: {badge_c}; color: white; padding: 1px 4px; border-radius: 4px; font-weight: 600;">{material}</span>
                             <span style="color: #444; font-weight: 600;">₩ {price:,}</span>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
-                with cols[1]:
-                    if st.button("선택", key=f"flex_btn_{idx}", use_container_width=True, type="primary"):
+                with c_btn:
+                    # Streamlit 버튼에 커스텀 스타일을 부여하여 높이와 폰트 맞춤
+                    if st.button("선택", key=f"fixed_btn_{idx}", use_container_width=True, type="primary"):
                         st.session_state.selected_model = model_name
                         st.session_state.unit_price = price
                         st.session_state.step = "select_color"
@@ -316,7 +317,7 @@ else:
                 ]
 
             if matched_colors_df.empty:
-                st.warning(f"⚠️ 매칭되는 컬러 정보를 찾지 못했습니다.")
+                st.warning(f"⚠️️ 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
                 if st.session_state.pending_reservation_items:
                     st.warning("⚠️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
