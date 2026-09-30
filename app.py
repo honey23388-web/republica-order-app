@@ -227,9 +227,9 @@ else:
             st.markdown("---")
             st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 8px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
             
-            # 🔥 소재명을 두 글자("티탄", "아세" 등)로 단축하고 가격을 제외하여 깔끔하게 가로배치
+            # 🔥 핵심 수정: 모델명 출력을 복구하고, 소재명 단축, 가격 제외
             for idx, row in df_models.iterrows():
-                model_name = str(row[model_col])
+                model_name = str(row[model_col]) # 모델명 가져오기
                 material = str(row[material_col]).strip() if material_col else "기타"
                 try:
                     price = int(row[price_col]) if price_col else 33000
@@ -237,14 +237,10 @@ else:
                     price = 33000
 
                 mat_lower = material.lower()
-                if "티타늄" in mat_lower:
-                    mat_short = "티탄"
-                elif "아세테이트" in mat_lower:
-                    mat_short = "아세"
-                elif "콤비" in mat_lower:
-                    mat_short = "콤비"
-                else:
-                    mat_short = material[:2]
+                if "티타늄" in mat_lower: mat_short = "티탄"
+                elif "아세테이트" in mat_lower: mat_short = "아세"
+                elif "콤비" in mat_lower: mat_short = "콤비"
+                else: mat_short = material[:2]
 
                 if "티타늄" in mat_lower or "아세테이트" in mat_lower:
                     box_bg = "#f7ebe1"
@@ -263,14 +259,14 @@ else:
                 with cols[0]:
                     st.markdown(f"""
                     <div style="padding: 10px 12px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 8px; height: 48px; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
-                        <div style="font-size: 13px; font-weight: 700; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🕶️ {model_name}</div>
+                        <div style="font-size: 13px; font-weight: 700; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🕶️ {model_name}</div> {/* 👈 모델명 출력 복구 */}
                         <div style="display: flex; gap: 6px; align-items: center; margin-top: 2px; font-size: 11px;">
                             <span style="background-color: {badge_c}; color: white; padding: 1px 5px; border-radius: 4px; font-weight: 600;">{mat_short}</span>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
                 with cols[1]:
-                    if st.button("선택", key=f"short_mat_btn_{idx}", use_container_width=True, type="primary"):
+                    if st.button("선택", key=f"missing_name_btn_{idx}", use_container_width=True, type="primary"):
                         st.session_state.selected_model = model_name
                         st.session_state.unit_price = price
                         st.session_state.step = "select_color"
@@ -323,7 +319,7 @@ else:
                 ]
 
             if matched_colors_df.empty:
-                st.warning(f"⚠️ 매칭되는 컬러 정보를 찾지 못했습니다.")
+                st.warning(f"⚠️️ 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
                 if st.session_state.pending_reservation_items:
                     st.warning("⚠️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
@@ -403,7 +399,7 @@ else:
                                         "거래처": st.session_state.current_client,
                                         "모델명": selected_model_name,
                                         "컬러": item["컬러"],
-                                        "수량": item["수량"],
+                                        "수량": item["컬러"],
                                         "단가": unit_price,
                                         "금액": item["수량"] * unit_price,
                                         "비고": ""
@@ -618,139 +614,4 @@ else:
                             st.session_state.cart = draft["내역"].copy()
                             st.session_state.cart_memo = draft.get("요청사항", "")
                             st.session_state.drafts.pop(i)
-                            st.session_state.step = "select_model"
-                            st.session_state.active_tab = "새주문"
-                            st.rerun()
-                    with col_cancel:
-                        if st.button("❌ 취소", key=f"del_draft_{i}", use_container_width=True):
-                            st.session_state.drafts.pop(i)
-                            st.rerun()
-        else:
-            st.info("작성된 주문서가 없습니다.")
-
-    # 재고현황 화면
-    elif active_view == "재고현황":
-        st.title("📦 재고 현황")
-        st.markdown("---")
-        if not df_colors.empty:
-            st.dataframe(df_colors, use_container_width=True)
-        else:
-            st.warning("재고 데이터를 불러올 수 없습니다.")
-
-    # 매장별 히스토리 화면
-    elif active_view == "매장별 히스토리":
-        st.title("📊 매장별 히스토리")
-        st.markdown("---")
-        
-        known_clients = []
-        if df_clients is not None and not df_clients.empty:
-            c_col = df_clients.columns[0]
-            known_clients = df_clients[c_col].dropna().astype(str).tolist()
-        
-        if not known_clients:
-            known_clients = ["등록된 거래처 없음"]
-            
-        selected_client_history = st.selectbox("거래처 선택", sorted(known_clients))
-        
-        if selected_client_history and selected_client_history != "등록된 거래처 없음":
-            client_row = df_clients[df_clients[df_clients.columns[0]].astype(str).str.strip() == selected_client_history]
-            
-            ad_balance, mi_suku, sheet_memo, sheet_res = "0", "0", "없음", "0"
-            if not client_row.empty:
-                r = client_row.iloc[0]
-                try: ad_balance = str(r.iloc[1]) if len(r) > 1 else "0"
-                except: pass
-                try: mi_suku = str(r.iloc[2]) if len(r) > 2 else "0"
-                except: pass
-                try: sheet_memo = str(r.iloc[3]) if len(r) > 3 else "없음"
-                except: pass
-                try: sheet_res = str(r.iloc[4]) if len(r) > 4 else "0"
-                except: pass
-
-            col_h1, col_h2, col_h3 = st.columns(3)
-            with col_h1:
-                st.metric(label="적립잔액", value=ad_balance)
-            with col_h2:
-                st.metric(label="미수금", value=mi_suku)
-            with col_h3:
-                st.metric(label="미출고", value=f"{sheet_res}개")
-                
-            if sheet_memo and sheet_memo != "nan" and sheet_memo != "없음":
-                st.info(f"📝 {sheet_memo}")
-                
-            st.markdown("---")
-            st.subheader("예약주문 내역")
-            reserved_items = []
-            for draft in st.session_state.drafts:
-                if draft['거래처'] == selected_client_history:
-                    for item in draft['내역']:
-                        if item.get('비고') == '예약주문':
-                            res_copy = item.copy()
-                            res_copy['주문시간'] = draft['시간']
-                            reserved_items.append(res_copy)
-                            
-            if reserved_items:
-                st.dataframe(pd.DataFrame(reserved_items)[['주문시간', '모델명', '컬러', '수량']], use_container_width=True)
-            else:
-                st.info("미출고 예약 내역 없음")
-
-    # 실적현황 화면
-    elif active_view == "실적현황":
-        st.title("📈 실적현황")
-        st.markdown("---")
-        
-        if len(st.session_state.drafts) == 0:
-            st.info("완료된 주문서가 없습니다.")
-        else:
-            all_orders = []
-            for draft in st.session_state.drafts:
-                order_time = draft['시간']
-                for item in draft['내역']:
-                    item_copy = item.copy()
-                    item_copy['주문시각'] = order_time
-                    item_copy['날짜'] = order_time.split()[0]
-                    all_orders.append(item_copy)
-            
-            df_orders_all = pd.DataFrame(all_orders)
-            total_sales = df_orders_all['금액'].sum()
-            total_qty = df_orders_all['수량'].sum()
-            
-            m1, m2 = st.columns(2)
-            with m1:
-                st.metric(label="총 매출액", value=f"₩ {total_sales:,}")
-            with m2:
-                st.metric(label="총 판매수량", value=f"{total_qty:,}개")
-
-    # -------------------------------------------------------------------------
-    # [하단 고정 가로배치 탭 바]
-    # -------------------------------------------------------------------------
-    cart_badge = f" ({cart_count})" if cart_count > 0 else ""
-    
-    st.markdown(f"""
-        <div class="fixed-bottom-dock">
-            <div id="dock-target" style="display: flex; gap: 6px; justify-content: space-between;">
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    d1, d2, d3, d4 = st.columns(4)
-    with d1:
-        if st.button("📝 새주문", use_container_width=True):
-            st.session_state.active_tab = "새주문"
-            st.session_state.step = "input_client"
-            st.rerun()
-    with d2:
-        cart_label = f"🛒 장바구니{cart_badge}"
-        if st.button(cart_label, use_container_width=True):
-            st.session_state.active_tab = "장바구니"
-            st.session_state.step = "goto_cart_tab"
-            st.rerun()
-    with d3:
-        if st.button("📋 주문서", use_container_width=True):
-            st.session_state.active_tab = "주문서"
-            st.rerun()
-    with d4:
-        if st.button("🔄 새로고침", use_container_width=True):
-            st.cache_data.clear()
-            st.success("데이터 갱신 완료!")
-            st.rerun()
+                            st.session_state.step =
