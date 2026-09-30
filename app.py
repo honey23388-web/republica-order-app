@@ -28,7 +28,7 @@ def load_data():
 df_models, df_colors, df_clients = load_data()
 
 if df_models is None or df_models.empty:
-    st.error("⚠️ 구글 시트 데이터를 불러오는 데 실패했습니다.")
+    st.error("⚠️️ 구글 시트 데이터를 불러오는 데 실패했습니다.")
     st.info("💡 해결 방법:\n1. 구글 시트 링크 및 공유 설정을 확인해 주세요.\n2. 탭 이름이 **model**, **color**, **client**인지 확인해 주세요.")
 else:
     if 'cart' not in st.session_state:
@@ -262,25 +262,16 @@ else:
 
         elif st.session_state.step == "select_color":
             st.markdown(f"""
-                <div class="client-highlight-box" style="font-size: 16px; padding: 10px;">
-                    📍 {st.session_state.current_client} &nbsp;|&nbsp; 📌 {st.session_state.selected_model}
+                <div class="client-highlight-box">
+                    📍 {st.session_state.current_client}<br>📌 {st.session_state.selected_model}
                 </div>
             """, unsafe_allow_html=True)
             
-            c_back1, c_back2 = st.columns(2)
-            with c_back1:
-                if st.button("⬅️ 모델 다시 고르기", use_container_width=True):
-                    st.session_state.step = "select_model"
-                    st.rerun()
-            with c_back2:
-                if len(st.session_state.cart) > 0:
-                    if st.button("🛒 장바구니 가기", use_container_width=True, type="primary"):
-                        st.session_state.active_tab = "장바구니"
-                        st.session_state.step = "goto_cart_tab"
-                        st.rerun()
+            if st.button("⬅️ 모델 다시 고르기", use_container_width=True):
+                st.session_state.step = "select_model"
+                st.rerun()
                 
-            st.markdown("---")
-            st.markdown("<p style='font-size: 14px; font-weight: 700; color: #444; margin-bottom: 10px;'>🎨 컬러별 수량 지정</p>", unsafe_allow_html=True)
+            # 🔥 불필요한 구분선과 '컬러별 수량 지정' 텍스트를 완전히 제거하여 여백 압축
 
             selected_model_name = st.session_state.selected_model
             unit_price = st.session_state.unit_price
@@ -354,18 +345,16 @@ else:
                                 except:
                                     stock_qty = 0
                             
-                            # 🔥 컬러명 독립 텍스트 제거하고 체크박스 라벨에 컬러명 + 재고 포함
-                            stock_color_style = "color: #cc0000;" if stock_qty == 0 else "color: #0066cc;"
                             checkbox_label = f"{color_label} (재고: {stock_qty})"
                             
                             col_chk, col_qty = st.columns([2.5, 1])
                             with col_chk:
-                                st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+                                st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
                                 is_checked = st.checkbox(checkbox_label, key=f"chk_{clean_selected_model}_{idx}")
                             with col_qty:
                                 qty = st.number_input("수량", min_value=1, max_value=100, value=1, step=1, key=f"qty_{clean_selected_model}_{idx}")
                             
-                            st.markdown("<hr style='margin: 6px 0; border: 0; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
+                            st.markdown("<hr style='margin: 4px 0; border: 0; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
                             
                             if is_checked:
                                 color_inputs.append({"컬러": color_label, "수량": qty, "재고": stock_qty})
