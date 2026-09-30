@@ -1,11 +1,15 @@
 import streamlit as st
 import pandas as pd
 import datetime
+import requests
+import json
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="REPUBLICA B2B 발주 시스템", page_icon="👓", layout="centered")
 
 SHEET_ID = "1FiP0FFJI8OdswJa_p6ejkOpLZGbVZx9j71UUSJ6zLN4"
+# ★ 대표님의 실제 구글 앱스 스크립트 웹 앱 URL 적용 완료 ★
+WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyBmjN8f2UkUbL3TrRK7zvkESJ2g-ZUqquHwPPDatrieBcpUMOAXiQXjJv3rHf5JjaG-Q/exec"
 
 @st.cache_data(ttl=3600)
 def load_data():
@@ -25,6 +29,33 @@ def load_data():
         return df_models, df_colors, df_clients
     except Exception as e:
         return None, None, None
+
+# 구글 시트로 데이터 전송하는 함수
+def send_order_to_google_sheet(cart_items, client_name, memo):
+    if not WEBHOOK_URL or WEBHOOK_URL == "여기에_복사한_웹앱_URL을_붙여넣으세요":
+        return False
+        
+    order_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    order_payload = []
+    
+    for item in cart_items:
+        order_payload.append([
+            order_time,
+            client_name,
+            item['모델명'],
+            item['컬러'],
+            item['수량'],
+            item['단가'],
+            item['금액'],
+            memo
+        ])
+    try:
+        res = requests.post(WEBHOOK_URL, data=json.dumps(order_payload))
+        if res.status_code == 200:
+            return True
+        return False
+    except:
+        return False
 
 df_models, df_colors, df_clients = load_data()
 
@@ -48,8 +79,7 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 💡 [핵심 에러 방어] 스크롤 최상단 강제 이동 로직
-    # 화면(탭/단계)이 전환될 때만 스크롤을 맨 위로 올리도록 상태를 추적합니다.
+    # 스크롤 최상단 강제 이동 로직
     current_view_state = f"{st.session_state.active_tab}_{st.session_state.step}_{st.session_state.get('selected_model', '')}_{st.session_state.current_client}"
     if 'previous_view_state' not in st.session_state:
         st.session_state.previous_view_state = ""
@@ -58,7 +88,6 @@ else:
         components.html(
             """
             <script>
-                // 스트림릿 모바일 화면의 스크롤을 최상단으로 강제 이동
                 window.parent.document.querySelector('.main').scrollTo(0,0);
                 window.parent.scrollTo(0,0);
             </script>
@@ -125,11 +154,12 @@ else:
     cart_count = sum(item['수량'] for item in st.session_state.cart)
 
     # -------------------------------------------------------------------------
-    # 왼쪽 상단 사이드바 (모든 메뉴를 클릭 박스 형태의 버튼으로 완벽 통일)
+    # 왼쪽 상단 사이드바 (메인 메뉴 통합)
     # -------------------------------------------------------------------------
     st.sidebar.markdown("### 👓 REPUBLICA B2B")
     
     st.sidebar.markdown("#### 📌 메인 메뉴")
+    
     if st.sidebar.button("📝 새주문 작성", use_container_width=True):
         st.session_state.active_tab = "새주문"
         st.session_state.step = "input_client"
@@ -159,7 +189,6 @@ else:
         st.session_state.active_tab = "실적현황"
         st.rerun()
 
-    # 현재 활성화된 탭 할당
     active_view = st.session_state.active_tab
 
     # -------------------------------------------------------------------------
@@ -461,6 +490,8 @@ else:
                     st.rerun()
             with sc2:
                 if st.button("🚀 최종 주문 완료하기", type="primary", use_container_width=True):
+                    is_saved = send_order_to_google_sheet(st.session_state.cart, st.session_state.current_client, st.session_state.cart_memo.strip())
+                    
                     st.session_state.drafts.append({
                         "거래처": st.session_state.current_client,
                         "시간": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -468,11 +499,15 @@ else:
                         "내역": st.session_state.cart.copy(),
                         "요청사항": st.session_state.cart_memo.strip()
                     })
-                    st.success("주문이 성공적으로 완료되었습니다!")
+                    
+                    if is_saved:
+                        st.success("🎉 주문이 본사 구글 시트로 성공적으로 전송되었습니다!")
+                    else:
+                        st.warning("⚠️ 구글 시트 전송 실패. 앱 내역에만 임시 저장되었습니다.")
+                        
                     st.session_state.cart = []
                     st.session_state.cart_memo = ""
                     st.session_state.step = "input_client"
-                    st.rerun()
 
     # 장바구니 화면
     elif active_view == "장바구니":
@@ -515,12 +550,14 @@ else:
                         "내역": st.session_state.cart.copy(),
                         "요청사항": st.session_state.cart_memo.strip()
                     })
-                    st.success("임시저장됨")
+                    st.success("앱 내부에 임시저장됨")
                     st.session_state.cart = []
                     st.session_state.cart_memo = ""
                     st.rerun()
             with col2:
                 if st.button("🚀 주문완료", type="primary", use_container_width=True):
+                    is_saved = send_order_to_google_sheet(st.session_state.cart, st.session_state.current_client, st.session_state.cart_memo.strip())
+                    
                     st.session_state.drafts.append({
                         "거래처": st.session_state.current_client,
                         "시간": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -528,11 +565,16 @@ else:
                         "내역": st.session_state.cart.copy(),
                         "요청사항": st.session_state.cart_memo.strip()
                     })
-                    st.success("주문 완료됨!")
+                    
+                    if is_saved:
+                        st.success("🎉 주문 완료! 본사 구글 시트로 전송되었습니다.")
+                    else:
+                        st.warning("⚠️ 구글 시트 연동 실패. 앱 내역에만 임시 저장되었습니다.")
+                        
                     st.session_state.cart = []
                     st.session_state.cart_memo = ""
                     st.session_state.step = "input_client"
-                    st.rerun()
+                    
             with col3:
                 if st.button("🧹 비우기", use_container_width=True):
                     st.session_state.cart = []
@@ -543,7 +585,7 @@ else:
 
     # 주문서 화면
     elif active_view == "주문서":
-        st.title("📋 주문서 리스트")
+        st.title("📋 주문서 리스트 (앱 내부 임시)")
         st.markdown("---")
         
         if len(st.session_state.drafts) > 0:
@@ -698,7 +740,7 @@ else:
                 st.metric(label="총 판매수량", value=f"{total_qty:,}개")
 
     # -------------------------------------------------------------------------
-    # 하단 장바구니 전용 버튼 (가장 하단에 항상 표시, 테두리 회색 버튼)
+    # 하단 장바구니 전용 버튼
     # -------------------------------------------------------------------------
     cart_badge_str = f" ({cart_count}개)" if cart_count > 0 else ""
     
