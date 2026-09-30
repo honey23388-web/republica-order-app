@@ -34,7 +34,7 @@ def load_data():
     except Exception as e:
         return None, None, None
 
-# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (SESSION_ID 쿼리 스트링 결합 및 F열 매장코드 반영)
+# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (URL 경로 정돈 및 매장코드/품목코드 매핑 반영)
 def send_order_to_ecount(cart_items, client_name, memo, df_colors, df_clients):
     try:
         # 1단계: ZONE 조회
@@ -136,9 +136,10 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors, df_clients):
             }
         }
         
-        # 💡 올바른 SESSION_ID 쿼리 스트링 포함 엔드포인트 호출
+        # 💡 정돈된 URL 엔드포인트 호출
+        order_url = f"{base_url}/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}"
         order_res = requests.post(
-            f"{base_url}/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}",
+            order_url,
             json=order_payload,
             timeout=10
         )
