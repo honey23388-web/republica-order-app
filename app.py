@@ -46,7 +46,7 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 📱 좌우 비율 균형 최적화 CSS 주입
+    # 모바일 최적화 및 CSS 주입
     st.markdown("""
         <style>
         .block-container {
@@ -87,27 +87,9 @@ else:
             margin-bottom: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
-        
-        /* 🚨 Streamlit 기본 컬럼 간격 및 찌그러짐 방지 최적화 */
-        [data-testid="stHorizontalBlock"] {
-            flex-wrap: nowrap !important;
-            align-items: center !important;
-            gap: 10px !important;
-        }
-        [data-testid="column"] {
-            width: unset !important;
-        }
-        [data-testid="column"]:nth-of-type(1) {
-            flex: 3.2 !important;
-        }
-        [data-testid="column"]:nth-of-type(2) {
-            flex: 1.3 !important;
-        }
-
         div.stButton > button {
             border-radius: 8px;
             font-weight: 600;
-            height: 52px; /* 버튼 높이를 카드와 딱 맞춤 */
             transition: all 0.2s ease-in-out;
         }
         div.stButton > button:hover {
@@ -243,9 +225,9 @@ else:
                     st.rerun()
 
             st.markdown("---")
-            st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 5px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 8px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
             
-            # 🖼️ 균형 잡힌 좌우 가로배치 카드 (왼쪽: 정보, 오른쪽: 큼직한 선택 버튼)
+            # 🔥 순수 HTML Flexbox를 이용해 왼쪽(정보)과 오른쪽([선택] 버튼)을 완벽하게 가로배치
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
                 material = str(row[material_col]).strip() if material_col else "기타"
@@ -268,21 +250,20 @@ else:
                     border_c = "#cccccc"
                     badge_c = "#555555"
 
-                c_info, c_btn = st.columns([3.2, 1.3])
-                
-                with c_info:
+                # 한 행(Row) 안에 정보 카드와 선택 버튼을 동시에 렌더링
+                cols = st.columns([3.2, 1.1])
+                with cols[0]:
                     st.markdown(f"""
-                    <div style="padding: 10px 12px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 8px; height: 52px; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
-                        <div style="font-size: 13px; font-weight: 700; color: #111; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🕶️ {model_name}</div>
-                        <div style="display: flex; gap: 6px; align-items: center; font-size: 11px;">
+                    <div style="padding: 10px 12px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 8px; height: 48px; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
+                        <div style="font-size: 13px; font-weight: 700; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🕶️ {model_name}</div>
+                        <div style="display: flex; gap: 6px; align-items: center; margin-top: 2px; font-size: 11px;">
                             <span style="background-color: {badge_c}; color: white; padding: 1px 4px; border-radius: 4px; font-weight: 600;">{material}</span>
                             <span style="color: #444; font-weight: 600;">₩ {price:,}</span>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
-                    
-                with c_btn:
-                    if st.button("선택", key=f"balanced_btn_{idx}", use_container_width=True, type="primary"):
+                with cols[1]:
+                    if st.button("선택", key=f"flex_btn_{idx}", use_container_width=True, type="primary"):
                         st.session_state.selected_model = model_name
                         st.session_state.unit_price = price
                         st.session_state.step = "select_color"
