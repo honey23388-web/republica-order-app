@@ -77,22 +77,27 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 스크롤 최상단 강제 이동 로직
-    current_view_state = f"{st.session_state.active_tab}_{st.session_state.step}_{st.session_state.get('selected_model', '')}_{st.session_state.current_client}"
-    if 'previous_view_state' not in st.session_state:
-        st.session_state.previous_view_state = ""
-        
-    if st.session_state.previous_view_state != current_view_state:
-        components.html(
-            """
-            <script>
-                window.parent.document.querySelector('.main').scrollTo(0,0);
-                window.parent.scrollTo(0,0);
-            </script>
-            """,
-            height=0
-        )
-        st.session_state.previous_view_state = current_view_state
+    # 💡 [핵심] 모든 액션/상태 변화 시 스크롤을 무조건 최상단으로 강제 이동시키는 자바스크립트
+    components.html(
+        """
+        <script>
+            function forceScrollTop() {
+                try {
+                    window.parent.scrollTo(0, 0);
+                    var mainContainer = window.parent.document.querySelector('.main');
+                    if (mainContainer) { mainContainer.scrollTo(0, 0); }
+                    var stContainer = window.parent.document.querySelector('.stMain');
+                    if (stContainer) { stContainer.scrollTo(0, 0); }
+                } catch(e) {}
+            }
+            // 즉시 실행 및 약간의 딜레이 후 재실행으로 렌더링 후 스크롤 고정 보장
+            forceScrollTop();
+            setTimeout(forceScrollTop, 50);
+            setTimeout(forceScrollTop, 150);
+        </script>
+        """,
+        height=0
+    )
 
     # 모바일 최적화 CSS
     st.markdown("""
