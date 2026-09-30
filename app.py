@@ -8,8 +8,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="REPUBLICA B2B 발주 시스템", page_icon="👓", layout="centered")
 
 SHEET_ID = "1FiP0FFJI8OdswJa_p6ejkOpLZGbVZx9j71UUSJ6zLN4"
-# ★ 대표님의 실제 구글 앱스 스크립트 웹 앱 URL 적용 완료 ★
-WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxavHiBAWmZ9C4V_A6YKLRyyMEwimh21xnULaEZCkOcgBzft6T8BLmOcXe5HkHIjCODaw/exec"
+WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyBmjN8f2UkUbL3TrRK7zvkESJ2g-ZUqquHwPPDatrieBcpUMOAXiQXjJv3rHf5JjaG-Q/exec"
 
 @st.cache_data(ttl=3600)
 def load_data():
@@ -32,7 +31,7 @@ def load_data():
 
 # 구글 시트로 데이터 전송하는 함수
 def send_order_to_google_sheet(cart_items, client_name, memo):
-    if not WEBHOOK_URL or WEBHOOK_URL == "여기에_복사한_웹앱_URL을_붙여넣으세요":
+    if not WEBHOOK_URL:
         return False
         
     order_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -63,7 +62,6 @@ if df_models is None or df_models.empty:
     st.error("⚠️ 구글 시트 데이터를 불러오는 데 실패했습니다.")
     st.info("💡 해결 방법:\n1. 구글 시트 링크 및 공유 설정을 확인해 주세요.\n2. 탭 이름이 **model**, **color**, **client**인지 확인해 주세요.")
 else:
-    # 세션 상태 초기화
     if 'cart' not in st.session_state:
         st.session_state.cart = []
     if 'drafts' not in st.session_state:
@@ -96,7 +94,7 @@ else:
         )
         st.session_state.previous_view_state = current_view_state
 
-    # 안전한 모바일 기본 CSS
+    # 모바일 최적화 CSS
     st.markdown("""
         <style>
         .block-container {
@@ -154,12 +152,11 @@ else:
     cart_count = sum(item['수량'] for item in st.session_state.cart)
 
     # -------------------------------------------------------------------------
-    # 왼쪽 상단 사이드바 (메인 메뉴 통합)
+    # 왼쪽 상단 사이드바
     # -------------------------------------------------------------------------
     st.sidebar.markdown("### 👓 REPUBLICA B2B")
     
     st.sidebar.markdown("#### 📌 메인 메뉴")
-    
     if st.sidebar.button("📝 새주문 작성", use_container_width=True):
         st.session_state.active_tab = "새주문"
         st.session_state.step = "input_client"
@@ -585,7 +582,7 @@ else:
 
     # 주문서 화면
     elif active_view == "주문서":
-        st.title("📋 주문서 리스트 (앱 내부 임시)")
+        st.markdown("#### 📋 작성된 주문서 리스트")
         st.markdown("---")
         
         if len(st.session_state.drafts) > 0:
