@@ -46,7 +46,7 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 (불필요한 아이콘 탭 바 CSS 삭제 완료)
+    # 모바일 최적화 및 하단 버튼 가로 정렬 CSS 추가
     st.markdown("""
         <style>
         .block-container {
@@ -97,6 +97,17 @@ else:
         div.stButton > button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        /* 🌟 하단 네비게이션 가로 정렬 강제 유지 (줄바꿈 방지) 🌟 */
+        div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) div[data-testid="stHorizontalBlock"] {
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+        }
+        div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) div[data-testid="column"] {
+            width: 25% !important;
+            flex: 1 1 25% !important;
+            min-width: 0 !important; /* 버튼이 줄어들 수 있도록 허용 */
         }
         </style>
     """, unsafe_allow_html=True)
@@ -683,29 +694,33 @@ else:
                 st.metric(label="총 판매수량", value=f"{total_qty:,}개")
 
     # -------------------------------------------------------------------------
-    # 하단 이모지 네비게이션 버튼 (문제의 HTML/이미지 삭제 후 교체)
+    # 하단 이모지 네비게이션 버튼 (화면 축소 시 세로 정렬 방지 적용 완료)
     # -------------------------------------------------------------------------
     cart_badge_str = f" ({cart_count})" if cart_count > 0 else ""
     
     st.markdown("---")
-    d1, d2, d3, d4 = st.columns(4)
-    with d1:
-        if st.button("📝", use_container_width=True):
-            st.session_state.active_tab = "새주문"
-            st.session_state.step = "input_client"
-            st.rerun()
-    with d2:
-        cart_label = f"🛒{cart_badge_str}"
-        if st.button(cart_label, use_container_width=True):
-            st.session_state.active_tab = "장바구니"
-            st.session_state.step = "goto_cart_tab"
-            st.rerun()
-    with d3:
-        if st.button("📋", use_container_width=True):
-            st.session_state.active_tab = "주문서"
-            st.rerun()
-    with d4:
-        if st.button("🔄", use_container_width=True):
-            st.cache_data.clear()
-            st.success("데이터 갱신 완료!")
-            st.rerun()
+    
+    # 해당 구역만을 위한 앵커 삽입 (위의 CSS와 연동되어 가로 25% 비율을 강제합니다)
+    with st.container():
+        st.markdown('<div id="bottom-nav-anchor"></div>', unsafe_allow_html=True)
+        d1, d2, d3, d4 = st.columns(4)
+        with d1:
+            if st.button("📝", use_container_width=True):
+                st.session_state.active_tab = "새주문"
+                st.session_state.step = "input_client"
+                st.rerun()
+        with d2:
+            cart_label = f"🛒{cart_badge_str}"
+            if st.button(cart_label, use_container_width=True):
+                st.session_state.active_tab = "장바구니"
+                st.session_state.step = "goto_cart_tab"
+                st.rerun()
+        with d3:
+            if st.button("📋", use_container_width=True):
+                st.session_state.active_tab = "주문서"
+                st.rerun()
+        with d4:
+            if st.button("🔄", use_container_width=True):
+                st.cache_data.clear()
+                st.success("데이터 갱신 완료!")
+                st.rerun()
