@@ -46,12 +46,12 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 및 하단 가로배치 고정 탭 바 CSS 주입
+    # 모바일 최적화 및 하단 고정 가로배치 탭 바 CSS 주입
     st.markdown("""
         <style>
         .block-container {
             padding-top: 0.8rem;
-            padding-bottom: 6rem; /* 하단 바에 내용이 가리지 않도록 넉넉한 여백 확보 */
+            padding-bottom: 6rem;
         }
         .main {
             background-color: #fcfcfc;
@@ -75,6 +75,19 @@ else:
             font-size: 11px;
             color: #aaaaaa;
         }
+        /* 🕶️ 현재 선택된 거래처 강조용 블랙 박스 스타일 */
+        .client-highlight-box {
+            background-color: #111111;
+            color: #ffffff;
+            padding: 14px 16px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
         div.stButton > button {
             border-radius: 8px;
             font-weight: 600;
@@ -84,8 +97,6 @@ else:
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-        
-        /* 📱 화면 하단 고정 가로배치 탭 바 스타일 */
         .fixed-bottom-dock {
             position: fixed;
             bottom: 0;
@@ -103,7 +114,7 @@ else:
     cart_count = sum(item['수량'] for item in st.session_state.cart)
 
     # -------------------------------------------------------------------------
-    # 왼쪽 상단 사이드바 (조회 메뉴 및 데이터 새로고침)
+    # 왼쪽 상단 사이드바
     # -------------------------------------------------------------------------
     st.sidebar.markdown("### 👓 REPUBLICA B2B")
     st.sidebar.markdown("---")
@@ -179,29 +190,28 @@ else:
                     st.rerun()
 
         elif st.session_state.step == "select_model":
-            st.markdown("""
-                <div class="brand-header">
-                    <h1>REPUBLICA</h1>
-                    <p>모델 선택 화면</p>
+            # 🕶️ 요청사항 반영: 최상단 헤더 제거 및 현재 거래처명을 검은색 사각박스(흰 글씨)로 강조
+            st.markdown(f"""
+                <div class="client-highlight-box">
+                    📍 {st.session_state.current_client}
                 </div>
             """, unsafe_allow_html=True)
             
-            st.info(f"📍 **현재 거래처:** {st.session_state.current_client}")
-            
-            if st.button("🔄 거래처 다시 선택/입력"):
+            if st.button("🔄 거래처 다시 선택/입력", use_container_width=True):
                 st.session_state.step = "input_client"
                 st.rerun()
                 
             st.markdown("---")
-            st.markdown("### 🔎 모델 직접 검색 (자동완성)")
+            
+            # 🔍 모델 직접 검색 (자동완성) - 큰 텍스트 제거하고 깔끔하게 배치
             model_col = df_models.columns[0]
             material_col = df_models.columns[1] if len(df_models.columns) > 1 else None
             price_col = df_models.columns[2] if len(df_models.columns) > 2 else None
 
             all_model_names = df_models[model_col].astype(str).tolist()
-            search_query = st.selectbox("모델명 검색 또는 선택", ["-- 모델 검색 --"] + all_model_names)
+            search_query = st.selectbox("모델 검색", ["-- 모델명 검색 또는 선택 --"] + all_model_names, label_visibility="collapsed")
             
-            if search_query != "-- 모델 검색 --":
+            if search_query != "-- 모델명 검색 또는 선택 --":
                 matched_row = df_models[df_models[model_col].astype(str) == search_query].iloc[0]
                 model_name = str(matched_row[model_col])
                 material = str(matched_row[material_col]).strip() if material_col else "기타"
@@ -218,7 +228,8 @@ else:
                     st.rerun()
 
             st.markdown("---")
-            st.markdown("### 📋 전체 모델 목록")
+            # 📋 "ALL MODELS" 소형 텍스트로 변경
+            st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 5px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
             
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
@@ -263,14 +274,11 @@ else:
                     st.rerun()
 
         elif st.session_state.step == "select_color":
-            st.markdown("""
-                <div class="brand-header">
-                    <h1>REPUBLICA</h1>
-                    <p>컬러 및 재고 확인</p>
+            st.markdown(f"""
+                <div class="client-highlight-box" style="font-size: 16px; padding: 10px;">
+                    📍 {st.session_state.current_client} &nbsp;|&nbsp; 📌 {st.session_state.selected_model}
                 </div>
             """, unsafe_allow_html=True)
-            
-            st.info(f"📍 **{st.session_state.current_client}** | 📌 **{st.session_state.selected_model}**")
             
             c_back1, c_back2 = st.columns(2)
             with c_back1:
@@ -495,7 +503,7 @@ else:
                 with c2:
                     st.write(f"{item['수량']}개 (₩ {item['금액']:,})")
                 with c3:
-                    if st.button("🗑️", key=f"cart_page_del_{idx}"):
+                    if st.button("🗑️️", key=f"cart_page_del_{idx}"):
                         st.session_state.cart.pop(idx)
                         st.rerun()
                         
@@ -704,11 +712,10 @@ else:
                 st.metric(label="총 판매수량", value=f"{total_qty:,}개")
 
     # -------------------------------------------------------------------------
-    # [하단 고정 가로배치 탭 바 (HTML/CSS 플로팅 인젝션)]
+    # [하단 고정 가로배치 탭 바]
     # -------------------------------------------------------------------------
     cart_badge = f" ({cart_count})" if cart_count > 0 else ""
     
-    # HTML 컨테이너 안에 Streamlit 버튼들을 정확히 가로로 밀착시켜 고정
     st.markdown(f"""
         <div class="fixed-bottom-dock">
             <div id="dock-target" style="display: flex; gap: 6px; justify-content: space-between;">
@@ -716,7 +723,6 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-    # 하단 독(Dock) 바 영역에 나란히 들어갈 4개의 가로배치 버튼
     d1, d2, d3, d4 = st.columns(4)
     with d1:
         if st.button("📝 새주문", use_container_width=True):
