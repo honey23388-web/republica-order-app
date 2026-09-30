@@ -37,7 +37,7 @@ if st.sidebar.button("🔄 최신 데이터 새로고침", use_container_width=T
 
 if df_models is None or df_models.empty:
     st.error("⚠️ 구글 시트 데이터를 불러오는 데 실패했습니다.")
-    st.info("💡 해결 방법:\n1. 구글 시트 링크 및 공유 설정(링크가 있는 모든 사용자 보기 가능)을 확인해 주세요.\n2. 시트 하단의 탭 이름이 **model**, **color**, **client**로 정확히 입력되어 있는지 확인해 주세요.")
+    st.info("💡 해결 방법:\n1. 구글 시트 링크 및 공유 설정을 확인해 주세요.\n2. 탭 이름이 **model**, **color**, **client**인지 확인해 주세요.")
 else:
     if 'cart' not in st.session_state:
         st.session_state.cart = []
@@ -52,33 +52,37 @@ else:
     if 'cart_memo' not in st.session_state:
         st.session_state.cart_memo = ""
 
-    # 공통 CSS 스타일 주입
+    # 모바일 최적화 CSS 스타일 주입 (상단 여백 최소화)
     st.markdown("""
         <style>
+        .block-container {
+            padding-top: 1.5rem;
+            padding-bottom: 2rem;
+        }
         .main {
             background-color: #fcfcfc;
         }
         .brand-header {
-            padding: 15px;
+            padding: 10px;
             background: linear-gradient(135deg, #111111, #333333);
             color: white;
-            border-radius: 10px;
+            border-radius: 8px;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
         .brand-header h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
             letter-spacing: 1px;
         }
         .brand-header p {
-            margin: 5px 0 0 0;
-            font-size: 13px;
+            margin: 2px 0 0 0;
+            font-size: 11px;
             color: #aaaaaa;
         }
         div.stButton > button {
-            border-radius: 10px;
+            border-radius: 8px;
             font-weight: 600;
             transition: all 0.2s ease-in-out;
         }
@@ -111,15 +115,12 @@ else:
             st.markdown("""
                 <div class="brand-header">
                     <h1>REPUBLICA</h1>
-                    <p>B2B Professional Optical Order System</p>
+                    <p>B2B Order System</p>
                 </div>
             """, unsafe_allow_html=True)
             
-            st.markdown("### 📝 새주문 시작하기")
-            st.markdown("발주를 진행할 거래처 유형을 선택해 주세요.")
-            
-            client_type = st.radio("거래처 유형", ["기존 거래처 선택", "신규 계약 매장"], horizontal=True)
-            st.markdown("---")
+            # 모바일에 맞게 여백을 극도로 압축한 거래처 선택 화면
+            client_type = st.radio("거래처 유형 선택", ["기존 거래처", "신규 계약"], horizontal=True, label_visibility="collapsed")
             
             known_clients = []
             if df_clients is not None and not df_clients.empty:
@@ -128,18 +129,16 @@ else:
             
             selected_target = ""
             
-            if client_type == "기존 거래처 선택":
-                st.markdown("#### 🔍 구글 시트 연동 기존 거래처 선택")
+            if client_type == "기존 거래처":
                 if known_clients:
                     client_list = ["-- 거래처를 선택하세요 --"] + sorted(known_clients)
-                    selected_dropdown = st.selectbox("거래처 안경원 검색", client_list, label_visibility="collapsed")
+                    selected_dropdown = st.selectbox("거래처 선택", client_list, label_visibility="collapsed")
                     if selected_dropdown != "-- 거래처를 선택하세요 --":
                         selected_target = selected_dropdown
                 else:
-                    st.warning("⚠️ 등록된 거래처가 없습니다. 구글 시트의 client 탭을 확인해 주세요.")
+                    st.warning("⚠️ 등록된 거래처가 없습니다.")
             else:
-                st.markdown("#### ✍️ 신규 계약 매장명 입력")
-                new_input = st.text_input("신규 매장명 입력", value="", placeholder="예: 스타안경원", label_visibility="collapsed")
+                new_input = st.text_input("신규 매장명 입력", value="", placeholder="신규 매장명 입력 (예: 스타안경원)", label_visibility="collapsed")
                 if new_input.strip():
                     selected_target = f"[신규] {new_input.strip()}"
             
@@ -173,9 +172,9 @@ else:
             price_col = df_models.columns[2] if len(df_models.columns) > 2 else None
 
             all_model_names = df_models[model_col].astype(str).tolist()
-            search_query = st.selectbox("모델명 검색 또는 선택", ["-- 모델을 검색하거나 아래에서 선택하세요 --"] + all_model_names)
+            search_query = st.selectbox("모델명 검색 또는 선택", ["-- 모델 검색 --"] + all_model_names)
             
-            if search_query != "-- 모델을 검색하거나 아래에서 선택하세요 --":
+            if search_query != "-- 모델 검색 --":
                 matched_row = df_models[df_models[model_col].astype(str) == search_query].iloc[0]
                 model_name = str(matched_row[model_col])
                 material = str(matched_row[material_col]).strip() if material_col else "기타"
@@ -184,7 +183,7 @@ else:
                 except:
                     price = 33000
                 
-                st.success(f"선택된 모델: **{model_name}** ({material} / ₩ {price:,})")
+                st.success(f"선택: **{model_name}** ({material} / ₩ {price:,})")
                 if st.button("🚀 이 모델 컬러 고르러 가기", type="primary", use_container_width=True):
                     st.session_state.selected_model = model_name
                     st.session_state.unit_price = price
@@ -192,10 +191,8 @@ else:
                     st.rerun()
 
             st.markdown("---")
-            st.markdown("### 📋 제품 모델 선택")
-            st.markdown("<small style='color: gray;'>소재별 색상이 적용된 아래 카드 버튼을 터치하여 컬러 선택으로 넘어가세요.</small>", unsafe_allow_html=True)
-            st.markdown("")
-
+            st.markdown("### 📋 전체 모델 목록")
+            
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
                 material = str(row[material_col]).strip() if material_col else "기타"
@@ -219,13 +216,13 @@ else:
                     badge_c = "#555555"
                 
                 st.markdown(f"""
-                <div style="padding: 10px 14px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 10px 10px 0 0; margin-top: 10px; font-weight: 700; color: #111; display: flex; justify-content: space-between; align-items: center;">
+                <div style="padding: 8px 12px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 8px 8px 0 0; margin-top: 8px; font-weight: 700; color: #111; display: flex; justify-content: space-between; align-items: center; font-size: 14px;">
                     <span>🕶️ {model_name}</span>
-                    <span style="background-color: {badge_c}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">{material}</span>
+                    <span style="background-color: {badge_c}; color: white; padding: 2px 5px; border-radius: 4px; font-size: 10px;">{material}</span>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                if st.button(f"👉 선택하기 (공급 단가: ₩ {price:,})", key=f"unified_card_{idx}", use_container_width=True, type="primary"):
+                if st.button(f"👉 선택 (단가: ₩ {price:,})", key=f"unified_card_{idx}", use_container_width=True, type="primary"):
                     st.session_state.selected_model = model_name
                     st.session_state.unit_price = price
                     st.session_state.step = "select_color"
@@ -233,7 +230,7 @@ else:
 
             if len(st.session_state.cart) > 0:
                 st.markdown("---")
-                if st.button("🛒 장바구니 확인 / 주문 완료로 이동", use_container_width=True):
+                if st.button("🛒 장바구니 확인 / 주문 완료", use_container_width=True):
                     st.session_state.step = "goto_cart_tab"
                     st.rerun()
 
@@ -245,23 +242,21 @@ else:
                 </div>
             """, unsafe_allow_html=True)
             
-            st.info(f"📍 **거래처:** {st.session_state.current_client} &nbsp;|&nbsp; 📌 **모델:** {st.session_state.selected_model}")
+            st.info(f"📍 **{st.session_state.current_client}** | 📌 **{st.session_state.selected_model}**")
             
-            # [핵심 개선] 컬러 선택 화면 상단에 명확한 뒤로가기 버튼 배치
             c_back1, c_back2 = st.columns(2)
             with c_back1:
-                if st.button("⬅️ 다른 모델 다시 고르기", use_container_width=True):
+                if st.button("⬅️ 모델 다시 고르기", use_container_width=True):
                     st.session_state.step = "select_model"
                     st.rerun()
             with c_back2:
                 if len(st.session_state.cart) > 0:
-                    if st.button("🛒 장바구니로 바로 가기", use_container_width=True, type="primary"):
+                    if st.button("🛒 장바구니 가기", use_container_width=True, type="primary"):
                         st.session_state.step = "goto_cart_tab"
                         st.rerun()
                 
             st.markdown("---")
-            st.markdown(f"### [{st.session_state.selected_model}] 컬러별 재고 및 수량 지정")
-            st.markdown("<small style='color: gray;'>재고가 0인 제품은 장바구니 담기 시 예약주문 여부를 확인합니다.</small>", unsafe_allow_html=True)
+            st.markdown(f"### 컬러별 수량 지정")
 
             selected_model_name = st.session_state.selected_model
             unit_price = st.session_state.unit_price
@@ -281,20 +276,19 @@ else:
                 ]
 
             if matched_colors_df.empty:
-                st.warning(f"⚠️ '{selected_model_name}' 모델에 매칭되는 컬러 정보를 찾지 못했습니다.")
+                st.warning(f"⚠️ 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
                 if st.session_state.pending_reservation_items:
-                    st.warning("⚠️ **재고가 없는 제품이 포함되어 있습니다!**")
-                    st.write('재고가 없는 제품입니다. 예약주문으로 하시겠습니까?')
+                    st.warning("⚠️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
                     
                     with st.form("reservation_confirm_form"):
-                        st.write("**[예약주문 대상 품목]**")
+                        st.write("재고가 없는 제품입니다. 예약주문으로 하시겠습니까?")
                         for p_item in st.session_state.pending_reservation_items:
-                            st.markdown(f"- **{p_item['모델명']}** / {p_item['컬러']} (수량: {p_item['수량']}개)")
+                            st.markdown(f"- **{p_item['모델명']}** / {p_item['컬러']} ({p_item['수량']}개)")
                         
                         r_col1, r_col2 = st.columns(2)
                         with r_col1:
-                            yes_sub = st.form_submit_button("예 (예약주문 진행)", use_container_width=True, type="primary")
+                            yes_sub = st.form_submit_button("예 (예약진행)", use_container_width=True, type="primary")
                         with r_col2:
                             no_sub = st.form_submit_button("취소", use_container_width=True)
                             
@@ -315,11 +309,11 @@ else:
                                 else:
                                     st.session_state.cart.append(p_item)
                             st.session_state.pending_reservation_items = []
-                            st.success("🎉 예약주문으로 정상 처리되어 장바구니에 담겼습니다!")
+                            st.success("🎉 예약주문 완료!")
                             st.rerun()
                         elif no_sub:
                             st.session_state.pending_reservation_items = []
-                            st.info("예약주문이 취소되었습니다.")
+                            st.info("취소되었습니다.")
                             st.rerun()
                 else:
                     with st.form(key=f"multi_color_form_{selected_model_name}"):
@@ -339,7 +333,7 @@ else:
                             c1, c2 = st.columns([3, 1])
                             with c1:
                                 stock_color_style = "color: #cc0000;" if stock_qty == 0 else "color: #0066cc;"
-                                st.markdown(f"**{color_label}** &nbsp; <span style='{stock_color_style} font-size: 13px;'>(재고: <b>{stock_qty}개</b>)</span>", unsafe_allow_html=True)
+                                st.markdown(f"**{color_label}** <span style='{stock_color_style} font-size: 12px;'>(재고:<b>{stock_qty}</b>)</span>", unsafe_allow_html=True)
                                 is_checked = st.checkbox("선택", key=f"chk_{clean_selected_model}_{idx}", label_visibility="collapsed")
                             with c2:
                                 qty = st.number_input("수량", min_value=1, max_value=100, value=1, step=1, key=f"qty_{clean_selected_model}_{idx}", label_visibility="collapsed")
@@ -352,7 +346,7 @@ else:
                         
                         if submitted:
                             if len(color_inputs) == 0:
-                                st.warning("⚠️ 체크박스로 선택된 컬러가 없습니다.")
+                                st.warning("⚠️ 선택된 컬러가 없습니다.")
                             else:
                                 zero_stock_items = []
                                 normal_items = []
@@ -391,25 +385,24 @@ else:
                                     st.session_state.pending_reservation_items = zero_stock_items
                                     st.rerun()
                                 else:
-                                    st.success("🎉 성공적으로 장바구니에 담겼습니다!")
+                                    st.success("🎉 장바구니 담기 성공!")
                                     st.rerun()
                             
                 if len(st.session_state.cart) > 0:
                     st.markdown("---")
-                    st.markdown("#### ✨ 다음 작업을 선택하세요:")
                     b_col1, b_col2 = st.columns(2)
                     with b_col1:
-                        if st.button("➕ 다른 모델 계속 담기", use_container_width=True):
+                        if st.button("➕ 다른 모델 담기", use_container_width=True):
                             st.session_state.step = "select_model"
                             st.rerun()
                     with b_col2:
-                        if st.button("🛒 장바구니 확인 / 주문 완료", type="primary", use_container_width=True):
+                        if st.button("🛒 장바구니 확인", type="primary", use_container_width=True):
                             st.session_state.step = "goto_cart_tab"
                             st.rerun()
 
         if st.session_state.step == "goto_cart_tab":
-            st.title("🛒 장바구니 현황")
-            st.markdown(f"현재 거래처: **{st.session_state.current_client}**")
+            st.title("🛒 장바구니")
+            st.markdown(f"**{st.session_state.current_client}**")
             
             for idx, item in enumerate(st.session_state.cart):
                 c1, c2, c3 = st.columns([4, 2, 1])
@@ -417,33 +410,31 @@ else:
                     memo_txt = f" [{item['비고']}]" if item.get('비고') else ""
                     st.write(f"**{item['모델명']}** / {item['컬러']}{memo_txt}")
                 with c2:
-                    st.write(f"수량: {item['수량']}개 (₩ {item['금액']:,})")
+                    st.write(f"{item['수량']}개 (₩ {item['금액']:,})")
                 with c3:
-                    if st.button("🗑️ 삭제", key=f"step_del_{idx}"):
+                    if st.button("🗑️", key=f"step_del_{idx}"):
                         st.session_state.cart.pop(idx)
                         st.rerun()
                         
             st.markdown("---")
             total_price = sum(item['금액'] for item in st.session_state.cart)
-            st.markdown(f"### 💰 총 주문 금액: **₩ {total_price:,}**")
+            st.markdown(f"### 총 금액: **₩ {total_price:,}**")
             
-            st.markdown("")
-            st.markdown("##### 📝 요청 (특이) 사항")
+            st.markdown("##### 📝 요청(특이)사항")
             st.session_state.cart_memo = st.text_area(
-                "특이사항 입력", 
+                "특이사항", 
                 value=st.session_state.cart_memo, 
-                placeholder="매장별 전달사항이나 특이사항을 입력해 주세요.",
+                placeholder="전달사항 입력",
                 label_visibility="collapsed"
             )
             
-            st.markdown("")
             sc1, sc2 = st.columns(2)
             with sc1:
-                if st.button("➕ 모델 추가로 담으러 가기", use_container_width=True):
+                if st.button("➕ 모델 추가", use_container_width=True):
                     st.session_state.step = "select_model"
                     st.rerun()
             with sc2:
-                if st.button("🚀 최종 주문 완료하기", type="primary", use_container_width=True):
+                if st.button("🚀 주문 완료", type="primary", use_container_width=True):
                     st.session_state.drafts.append({
                         "거래처": st.session_state.current_client,
                         "시간": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -451,7 +442,7 @@ else:
                         "내역": st.session_state.cart.copy(),
                         "요청사항": st.session_state.cart_memo.strip()
                     })
-                    st.success("주문이 성공적으로 완료되었습니다!")
+                    st.success("주문 완료!")
                     st.session_state.cart = []
                     st.session_state.cart_memo = ""
                     st.session_state.step = "input_client"
@@ -461,8 +452,8 @@ else:
     # 2. 장바구니 메뉴
     # -------------------------------------------------------------------------
     elif nav_choice.startswith("장바구니"):
-        st.title("🛒 장바구니 및 임시저장")
-        st.markdown(f"현재 거래처: **{st.session_state.current_client or '지정되지 않음'}**")
+        st.title("🛒 장바구니")
+        st.markdown(f"**{st.session_state.current_client or '미지정'}**")
         st.markdown("---")
         
         if len(st.session_state.cart) > 0:
@@ -472,26 +463,24 @@ else:
                     memo_txt = f" [{item['비고']}]" if item.get('비고') else ""
                     st.write(f"**{item['모델명']}** / {item['컬러']}{memo_txt}")
                 with c2:
-                    st.write(f"수량: {item['수량']}개 (₩ {item['금액']:,})")
+                    st.write(f"{item['수량']}개 (₩ {item['금액']:,})")
                 with c3:
-                    if st.button("🗑️ 삭제", key=f"cart_page_del_{idx}"):
+                    if st.button("🗑️", key=f"cart_page_del_{idx}"):
                         st.session_state.cart.pop(idx)
                         st.rerun()
                         
             st.markdown("---")
             total_price = sum(item['금액'] for item in st.session_state.cart)
-            st.markdown(f"### 💰 총 주문 금액: **₩ {total_price:,}**")
+            st.markdown(f"### 총 금액: **₩ {total_price:,}**")
             
-            st.markdown("")
-            st.markdown("##### 📝 요청 (특이) 사항")
+            st.markdown("##### 📝 요청(특이)사항")
             st.session_state.cart_memo = st.text_area(
-                "특이사항 입력", 
+                "특이사항", 
                 value=st.session_state.cart_memo, 
-                placeholder="매장별 전달사항이나 특이사항을 입력해 주세요.",
+                placeholder="전달사항 입력",
                 label_visibility="collapsed"
             )
             
-            st.markdown("")
             col1, col2, col3 = st.columns(3)
             with col1:
                 if st.button("💾 임시저장", use_container_width=True):
@@ -502,12 +491,12 @@ else:
                         "내역": st.session_state.cart.copy(),
                         "요청사항": st.session_state.cart_memo.strip()
                     })
-                    st.success("임시저장되었습니다.")
+                    st.success("임시저장됨")
                     st.session_state.cart = []
                     st.session_state.cart_memo = ""
                     st.rerun()
             with col2:
-                if st.button("🚀 최종 주문 완료", type="primary", use_container_width=True):
+                if st.button("🚀 주문완료", type="primary", use_container_width=True):
                     st.session_state.drafts.append({
                         "거래처": st.session_state.current_client,
                         "시간": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -515,34 +504,31 @@ else:
                         "내역": st.session_state.cart.copy(),
                         "요청사항": st.session_state.cart_memo.strip()
                     })
-                    st.success("주문이 성공적으로 전송 완료되었습니다!")
+                    st.success("주문 완료됨!")
                     st.session_state.cart = []
                     st.session_state.cart_memo = ""
                     st.session_state.step = "input_client"
                     st.rerun()
             with col3:
-                if st.button("🧹 장바구니 비우기", use_container_width=True):
+                if st.button("🧹 비우기", use_container_width=True):
                     st.session_state.cart = []
                     st.session_state.cart_memo = ""
                     st.rerun()
         else:
-            st.info("장바구니가 비어 있습니다. '새주문' 메뉴에서 제품을 담아주세요.")
+            st.info("장바구니가 비어 있습니다.")
 
     # -------------------------------------------------------------------------
     # 3. 주문서 메뉴
     # -------------------------------------------------------------------------
     elif nav_choice == "주문서":
-        st.title("📋 작성된 주문서 리스트")
-        st.markdown("완료된 주문서 목록을 확인하고, **요청사항 확인·수량 변경·품목 삭제·모델 추가** 등으로 직접 수정하거나 취소할 수 있습니다.")
+        st.title("📋 주문서 리스트")
         st.markdown("---")
         
         if len(st.session_state.drafts) > 0:
             for i, draft in enumerate(st.session_state.drafts):
-                time_key = '시간'
-                t_str = draft.get(time_key, '시간정보없음')
-                with st.expander(f"[{t_str}] 거래처: {draft['거래처']} (총 {draft['품목수']}개 품목)"):
+                t_str = draft.get('시간', '시간없음')
+                with st.expander(f"[{t_str}] {draft['거래처']} ({draft['품목수']}개)"):
                     
-                    st.markdown("##### ✏️ 주문 품목 편집")
                     updated_items = []
                     for item_idx, item in enumerate(draft["내역"]):
                         col_m, col_c, col_q, col_del = st.columns([3, 2, 2, 1])
@@ -570,45 +556,37 @@ else:
                     draft["내역"] = updated_items
                     draft["품목수"] = sum(x['수량'] for x in updated_items)
                     
-                    st.markdown("---")
-                    st.markdown("##### 📝 요청 (특이) 사항")
+                    st.markdown("##### 메모")
                     current_draft_memo = draft.get("요청사항", "")
-                    edited_memo = st.text_area("요청사항 수정", value=current_draft_memo, key=f"edit_memo_{i}", label_visibility="collapsed")
+                    edited_memo = st.text_area("메모 수정", value=current_draft_memo, key=f"edit_memo_{i}", label_visibility="collapsed")
                     draft["요청사항"] = edited_memo.strip()
                     
-                    st.markdown("")
                     col_save, col_add, col_cancel = st.columns(3)
                     with col_save:
-                        if st.button("💾 변경사항 저장", key=f"save_draft_{i}", use_container_width=True, type="primary"):
-                            st.success("주문서 수정 내용이 저장되었습니다!")
+                        if st.button("💾 저장", key=f"save_draft_{i}", use_container_width=True, type="primary"):
+                            st.success("저장됨!")
                             st.rerun()
                     with col_add:
-                        if st.button("➕ 모델 추가하기", key=f"add_more_to_draft_{i}", use_container_width=True):
+                        if st.button("➕ 모델추가", key=f"add_more_to_draft_{i}", use_container_width=True):
                             st.session_state.current_client = draft['거래처']
                             st.session_state.cart = draft["내역"].copy()
                             st.session_state.cart_memo = draft.get("요청사항", "")
                             st.session_state.drafts.pop(i)
                             st.session_state.step = "select_model"
-                            st.success("모델을 추가할 수 있도록 새주문 화면으로 이동합니다.")
                             st.rerun()
                     with col_cancel:
-                        if st.button("❌ 주문 취소(삭제)", key=f"del_draft_{i}", use_container_width=True):
+                        if st.button("❌ 취소", key=f"del_draft_{i}", use_container_width=True):
                             st.session_state.drafts.pop(i)
-                            st.success("주문서가 취소되었습니다.")
                             st.rerun()
         else:
-            st.info("작성된 주문서 내역이 없습니다.")
+            st.info("작성된 주문서가 없습니다.")
 
     # -------------------------------------------------------------------------
     # 4. 재고현황 메뉴
     # -------------------------------------------------------------------------
     elif nav_choice == "재고현황":
-        st.title("📦 실시간 재고 현황")
-        st.markdown("이카운트 ERP(Ecount ERP API) 연동을 통해 실시간 제품별 재고 수량을 확인할 수 있습니다.")
+        st.title("📦 재고 현황")
         st.markdown("---")
-        
-        st.info("💡 현재 이카운트 ERP API 연동 대기 중입니다. (연동 시 실시간 재고 수량이 자동 표기됩니다)")
-        
         if not df_colors.empty:
             st.dataframe(df_colors, use_container_width=True)
         else:
@@ -618,8 +596,7 @@ else:
     # 5. 매장별 히스토리 보기 메뉴
     # -------------------------------------------------------------------------
     elif nav_choice == "매장별 히스토리 보기":
-        st.title("📊 매장별 거래 히스토리 & 채권 현황")
-        st.markdown("구글 시트(`client` 탭) 및 주문 데이터를 기반으로 적립잔액, 미수금, 특이사항 및 예약출고를 조회합니다.")
+        st.title("📊 매장별 히스토리")
         st.markdown("---")
         
         known_clients = []
@@ -628,45 +605,38 @@ else:
             known_clients = df_clients[c_col].dropna().astype(str).tolist()
         
         if not known_clients:
-            known_clients = ["등록된 거래처가 없습니다"]
+            known_clients = ["등록된 거래처 없음"]
             
-        selected_client_history = st.selectbox("🔍 조회할 거래처(매장) 선택", sorted(known_clients))
+        selected_client_history = st.selectbox("거래처 선택", sorted(known_clients))
         
-        if selected_client_history and selected_client_history != "등록된 거래처가 없습니다":
-            st.markdown(f"### 📍 [{selected_client_history}] 상세 현황")
-            
+        if selected_client_history and selected_client_history != "등록된 거래처 없음":
             client_row = df_clients[df_clients[df_clients.columns[0]].astype(str).str.strip() == selected_client_history]
             
-            ad_balance = "0"
-            mi_suku = "0"
-            sheet_memo = "특이사항 없음"
-            sheet_res = "0"
-            
+            ad_balance, mi_suku, sheet_memo, sheet_res = "0", "0", "없음", "0"
             if not client_row.empty:
                 r = client_row.iloc[0]
                 try: ad_balance = str(r.iloc[1]) if len(r) > 1 else "0"
                 except: pass
                 try: mi_suku = str(r.iloc[2]) if len(r) > 2 else "0"
                 except: pass
-                try: sheet_memo = str(r.iloc[3]) if len(r) > 3 else "특이사항 없음"
+                try: sheet_memo = str(r.iloc[3]) if len(r) > 3 else "없음"
                 except: pass
                 try: sheet_res = str(r.iloc[4]) if len(r) > 4 else "0"
                 except: pass
 
             col_h1, col_h2, col_h3 = st.columns(3)
             with col_h1:
-                st.metric(label="💰 적립 잔액", value=f"{ad_balance}")
+                st.metric(label="적립잔액", value=ad_balance)
             with col_h2:
-                st.metric(label="⚠️ 미수금 (채권)", value=f"{mi_suku}")
+                st.metric(label="미수금", value=mi_suku)
             with col_h3:
-                st.metric(label="📦 미출고 예약제품(수량)", value=f"{sheet_res} 개")
+                st.metric(label="미출고", value=f"{sheet_res}개")
                 
-            if sheet_memo and sheet_memo != "nan" and sheet_memo != "특이사항 없음":
-                st.info(f"📝 **[시트 등록 특이사항]:** {sheet_memo}")
+            if sheet_memo and sheet_memo != "nan" and sheet_memo != "없음":
+                st.info(f"📝 {sheet_memo}")
                 
             st.markdown("---")
-            st.subheader("📦 실시간 예약 및 미출고 제품 내역")
-            
+            st.subheader("예약주문 내역")
             reserved_items = []
             for draft in st.session_state.drafts:
                 if draft['거래처'] == selected_client_history:
@@ -677,35 +647,19 @@ else:
                             reserved_items.append(res_copy)
                             
             if reserved_items:
-                df_reserved = pd.DataFrame(reserved_items)[['주문시간', '모델명', '컬러', '수량', '금액']]
-                st.dataframe(df_reserved, use_container_width=True)
+                st.dataframe(pd.DataFrame(reserved_items)[['주문시간', '모델명', '컬러', '수량']], use_container_width=True)
             else:
-                st.info("💡 현재 앱에서 작성된 미출고 예약주문 품목이 없습니다.")
-                
-            st.markdown("---")
-            st.subheader("📜 과거 주문 판매 내역 및 특이사항 메모")
-            
-            client_drafts = [d for d in st.session_state.drafts if d['거래처'] == selected_client_history]
-            if client_drafts:
-                for cd in client_drafts:
-                    memo_str = f" | 메모: {cd['요청사항']}" if cd.get('요청사항') else ""
-                    with st.expander(f"🕒 주문일시: {cd['시간']} (총 {cd['품목수']}개){memo_str}"):
-                        st.dataframe(pd.DataFrame(cd['내역']), use_container_width=True)
-                        if cd.get('요청사항'):
-                            st.info(f"📝 **매장 요청/특이사항 메모:** {cd['요청사항']}")
-            else:
-                st.info("📈 해당 거래처의 완료된 과거 주문 내역이 없습니다.")
+                st.info("미출고 예약 내역 없음")
 
     # -------------------------------------------------------------------------
     # 6. 현황 메뉴
     # -------------------------------------------------------------------------
     elif nav_choice == "현황":
-        st.title("📊 매출 및 주문 현황")
-        st.markdown("일별 주문, 주별 및 월별 판매 금액 현황을 한눈에 확인할 수 있습니다.")
+        st.title("📊 매출 현황")
         st.markdown("---")
         
         if len(st.session_state.drafts) == 0:
-            st.info("📈 집계할 완료된 주문서 데이터가 아직 없습니다. 주문을 완료하면 통계가 자동 집계됩니다.")
+            st.info("완료된 주문서가 없습니다.")
         else:
             all_orders = []
             for draft in st.session_state.drafts:
@@ -717,21 +671,11 @@ else:
                     all_orders.append(item_copy)
             
             df_orders_all = pd.DataFrame(all_orders)
-            
             total_sales = df_orders_all['금액'].sum()
             total_qty = df_orders_all['수량'].sum()
             
             m1, m2 = st.columns(2)
             with m1:
-                st.metric(label="💰 누적 총 판매금액", value=f"₩ {total_sales:,}")
+                st.metric(label="총 매출액", value=f"₩ {total_sales:,}")
             with m2:
-                st.metric(label="👓 누적 총 판매수량", value=f"{total_qty:,} 개")
-                
-            st.markdown("---")
-            st.subheader("📅 일별 판매 현황")
-            daily_sales = df_orders_all.groupby('날짜')[['수량', '금액']].sum().reset_index()
-            st.dataframe(daily_sales, use_container_width=True)
-            
-            st.subheader("🗓️ 거래처별 판매 현황")
-            client_sales = df_orders_all.groupby('거래처')[['수량', '금액']].sum().reset_index()
-            st.dataframe(client_sales, use_container_width=True)
+                st.metric(label="총 판매수량", value=f"{total_qty:,}개")
