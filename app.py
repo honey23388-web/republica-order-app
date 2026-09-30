@@ -34,10 +34,10 @@ def load_data():
     except Exception as e:
         return None, None, None
 
-# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (정확한 sboapi 주소 반영)
+# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (ZONE 'CC' 대응 반영)
 def send_order_to_ecount(cart_items, client_name, memo, df_colors):
     try:
-        # 1단계: ZONE 조회 (올바른 sboapi 주소 적용)
+        # 1단계: ZONE 조회
         zone_res = requests.post(
             "https://sboapi.ecount.com/OAPI/V2/Zone",
             json={"COM_CODE": ECOUNT_COM_CODE},
@@ -47,11 +47,14 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
         if zone_data.get("Status") != "200" and zone_data.get("Code") != "200":
             st.error(f"이카운트 Zone 조회 실패: {zone_data}")
             return False
-        zone = zone_data.get("Data", {}).get("ZONE", "1")
+        
+        zone = zone_data.get("Data", {}).get("ZONE", "CC")
+        # 만약 존이 CC 등 영문 형태일 때 URL 도메인 규칙 대응
+        api_prefix = f"https://sboapi{zone.lower()}.ecount.com" if zone != "1" else "https://sboapi.ecount.com"
         
         # 2단계: 로그인 (세션 발급)
         login_res = requests.post(
-            f"https://sboapi{zone}.ecount.com/OAPI/V2/OAPILogin",
+            f"{api_prefix}/OAPI/V2/OAPILogin",
             json={
                 "COM_CODE": ECOUNT_COM_CODE,
                 "USER_ID": ECOUNT_USER_ID,
@@ -116,7 +119,7 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
         }
         
         order_res = requests.post(
-            f"https://sboapi{zone}.ecount.com/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}",
+            f"{api_prefix}/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}",
             json=order_payload,
             timeout=10
         )
@@ -658,7 +661,7 @@ else:
                     st.session_state.step = "input_client"
                     
             with col3:
-                if st.button("🧹 비우기", use_keyword_width=True if 'use_keyword_width' in globals() else False, use_container_width=True):
+                if st.button("🧹 비우기", use_container_width=True):
                     st.session_state.cart = []
                     st.session_state.cart_memo = ""
                     st.rerun()
@@ -683,7 +686,6 @@ else:
                         with col_c:
                             st.write(f"{item['컬러']}")
                         with col_q:
-                    
                             new_qty = st.number_input("수량", min_value=1, max_value=100, value=int(item['수량']), key=f"edit_q_{i}_{item_idx}", label_visibility="collapsed")
                         with col_del:
                             remove_item = st.button("🗑️", key=f"del_item_{i}_{item_idx}")
