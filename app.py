@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import datetime
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="REPUBLICA B2B 발주 시스템", page_icon="👓", layout="centered")
 
@@ -46,8 +47,25 @@ else:
         st.session_state.cart_memo = ""
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
-    if 'sub_menu_state' not in st.session_state:
-        st.session_state.sub_menu_state = "선택 안함 (메인 화면 유지)"
+
+    # 💡 [핵심 에러 방어] 스크롤 최상단 강제 이동 로직
+    # 화면(탭/단계)이 전환될 때만 스크롤을 맨 위로 올리도록 상태를 추적합니다.
+    current_view_state = f"{st.session_state.active_tab}_{st.session_state.step}_{st.session_state.get('selected_model', '')}_{st.session_state.current_client}"
+    if 'previous_view_state' not in st.session_state:
+        st.session_state.previous_view_state = ""
+        
+    if st.session_state.previous_view_state != current_view_state:
+        components.html(
+            """
+            <script>
+                // 스트림릿 모바일 화면의 스크롤을 최상단으로 강제 이동
+                window.parent.document.querySelector('.main').scrollTo(0,0);
+                window.parent.scrollTo(0,0);
+            </script>
+            """,
+            height=0
+        )
+        st.session_state.previous_view_state = current_view_state
 
     # 안전한 모바일 기본 CSS
     st.markdown("""
@@ -107,21 +125,18 @@ else:
     cart_count = sum(item['수량'] for item in st.session_state.cart)
 
     # -------------------------------------------------------------------------
-    # 왼쪽 상단 사이드바 (메인 메뉴 통합)
+    # 왼쪽 상단 사이드바 (모든 메뉴를 클릭 박스 형태의 버튼으로 완벽 통일)
     # -------------------------------------------------------------------------
     st.sidebar.markdown("### 👓 REPUBLICA B2B")
     
     st.sidebar.markdown("#### 📌 메인 메뉴")
-    
     if st.sidebar.button("📝 새주문 작성", use_container_width=True):
         st.session_state.active_tab = "새주문"
         st.session_state.step = "input_client"
-        st.session_state.sub_menu_state = "선택 안함 (메인 화면 유지)"
         st.rerun()
         
     if st.sidebar.button("📋 주문서 내역", use_container_width=True):
         st.session_state.active_tab = "주문서"
-        st.session_state.sub_menu_state = "선택 안함 (메인 화면 유지)"
         st.rerun()
         
     if st.sidebar.button("🔄 데이터 새로고침", use_container_width=True):
@@ -131,27 +146,21 @@ else:
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("#### 📂 추가 조회 메뉴")
-    sub_menu = st.sidebar.radio(
-        "조회 메뉴 선택", 
-        [
-            "선택 안함 (메인 화면 유지)",
-            "📦 재고현황", 
-            "📊 매장별 히스토리 보기", 
-            "📈 실적현황"
-        ],
-        key="sub_menu_state",
-        label_visibility="collapsed"
-    )
     
-    if sub_menu != "선택 안함 (메인 화면 유지)":
-        if "재고현황" in sub_menu:
-            active_view = "재고현황"
-        elif "매장별 히스토리" in sub_menu:
-            active_view = "매장별 히스토리"
-        elif "실적현황" in sub_menu:
-            active_view = "실적현황"
-    else:
-        active_view = st.session_state.active_tab
+    if st.sidebar.button("📦 재고현황", use_container_width=True):
+        st.session_state.active_tab = "재고현황"
+        st.rerun()
+        
+    if st.sidebar.button("📊 매장별 히스토리", use_container_width=True):
+        st.session_state.active_tab = "매장별 히스토리"
+        st.rerun()
+        
+    if st.sidebar.button("📈 실적현황", use_container_width=True):
+        st.session_state.active_tab = "실적현황"
+        st.rerun()
+
+    # 현재 활성화된 탭 할당
+    active_view = st.session_state.active_tab
 
     # -------------------------------------------------------------------------
     # 메인 화면 라우팅
@@ -282,7 +291,6 @@ else:
             clean_selected_model = str(selected_model_name).split('(')[0].strip().upper()
             color_model_col = df_colors.columns[0]
             
-            # 💡 [핵심 에러 방어 코드]: 빈칸(NaN), 숫자 등의 데이터를 강제로 안전한 문자열로 변환
             safe_color_series = df_colors[color_model_col].fillna("").astype(str)
             
             matched_colors_df = df_colors[
