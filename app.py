@@ -49,7 +49,7 @@ else:
     if 'sub_menu_state' not in st.session_state:
         st.session_state.sub_menu_state = "선택 안함 (메인 화면 유지)"
 
-    # 안전한 모바일 기본 CSS (오류 유발 강제 정렬 코드 모두 제거)
+    # 안전한 모바일 기본 CSS
     st.markdown("""
         <style>
         .block-container {
@@ -116,12 +116,12 @@ else:
     if st.sidebar.button("📝 새주문 작성", use_container_width=True):
         st.session_state.active_tab = "새주문"
         st.session_state.step = "input_client"
-        st.session_state.sub_menu_state = "선택 안함 (메인 화면 유지)" # 라디오 버튼 충돌 초기화
+        st.session_state.sub_menu_state = "선택 안함 (메인 화면 유지)"
         st.rerun()
         
     if st.sidebar.button("📋 주문서 내역", use_container_width=True):
         st.session_state.active_tab = "주문서"
-        st.session_state.sub_menu_state = "선택 안함 (메인 화면 유지)" # 라디오 버튼 충돌 초기화
+        st.session_state.sub_menu_state = "선택 안함 (메인 화면 유지)"
         st.rerun()
         
     if st.sidebar.button("🔄 데이터 새로고침", use_container_width=True):
@@ -686,15 +686,15 @@ else:
                 st.metric(label="총 판매수량", value=f"{total_qty:,}개")
 
     # -------------------------------------------------------------------------
-    # 하단 장바구니 전용 버튼 (가장 하단에 항상 표시)
+    # 하단 장바구니 전용 버튼 (가장 하단에 항상 표시, 테두리 회색 버튼)
     # -------------------------------------------------------------------------
     cart_badge_str = f" ({cart_count}개)" if cart_count > 0 else ""
     
-    st.markdown("<br>", unsafe_allow_html=True) # 위쪽 콘텐츠와의 여백
+    st.markdown("<br>", unsafe_allow_html=True) 
     st.markdown("---")
     
-    # 크고 눈에 띄게 장바구니 버튼 1개만 배치
-    if st.button(f"🛒 장바구니 확인하기{cart_badge_str}", type="primary", use_container_width=True):
+    # type="primary"를 제거하여 헷갈리지 않는 기본 회색 톤 버튼으로 적용
+    if st.button(f"🛒 장바구니 확인하기{cart_badge_str}", use_container_width=True):
         st.session_state.active_tab = "장바구니"
         st.session_state.step = "goto_cart_tab"
         st.rerun()
