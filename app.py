@@ -46,12 +46,12 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 및 하단 아이폰 스타일 네비게이션 바 CSS 주입
+    # 모바일 최적화 및 하단 가로배치 고정 탭 바 CSS 주입
     st.markdown("""
         <style>
         .block-container {
             padding-top: 0.8rem;
-            padding-bottom: 5.5rem; /* 하단 바에 내용이 가리지 않도록 여백 확보 */
+            padding-bottom: 6rem; /* 하단 바에 내용이 가리지 않도록 넉넉한 여백 확보 */
         }
         .main {
             background-color: #fcfcfc;
@@ -85,46 +85,17 @@ else:
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         
-        /* 📱 아이폰 하단 독(Dock) 바 스타일 */
-        .ios-bottom-nav {
+        /* 📱 화면 하단 고정 가로배치 탭 바 스타일 */
+        .fixed-bottom-dock {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            background-color: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid #dcdcdc;
-            padding: 8px 10px 12px 10px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 99999;
-            box-shadow: 0 -4px 15px rgba(0,0,0,0.06);
-        }
-        .ios-nav-btn {
-            background: none;
-            border: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            width: 70px;
-            height: 50px;
-            border-radius: 10px;
-            transition: background 0.15s;
-        }
-        .ios-nav-btn:active {
-            background-color: rgba(0,0,0,0.05);
-        }
-        .ios-nav-icon {
-            font-size: 20px;
-            margin-bottom: 2px;
-        }
-        .ios-nav-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: #333333;
+            background-color: #ffffff;
+            border-top: 1px solid #e0e0e0;
+            padding: 8px 12px 12px 12px;
+            z-index: 999999;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.08);
         }
         </style>
     """, unsafe_allow_html=True)
@@ -471,7 +442,7 @@ else:
                 with c2:
                     st.write(f"수량: {item['수량']}개 (₩ {item['금액']:,})")
                 with c3:
-                    if st.button("🗑️️ 삭제", key=f"step_del_{idx}"):
+                    if st.button("🗑 삭제", key=f"step_del_{idx}"):
                         st.session_state.cart.pop(idx)
                         st.rerun()
                         
@@ -733,37 +704,36 @@ else:
                 st.metric(label="총 판매수량", value=f"{total_qty:,}개")
 
     # -------------------------------------------------------------------------
-    # [하단 고정 아이폰 스타일 가로배치 네비게이션 바]
+    # [하단 고정 가로배치 탭 바 (HTML/CSS 플로팅 인젝션)]
     # -------------------------------------------------------------------------
     cart_badge = f" ({cart_count})" if cart_count > 0 else ""
     
-    # 쿼리 파라미터나 콜백을 활용해 하단 탭 클릭 시 즉시 화면 전환되도록 Streamlit 폼/버튼 매커니즘 구현
+    # HTML 컨테이너 안에 Streamlit 버튼들을 정확히 가로로 밀착시켜 고정
     st.markdown(f"""
-        <div class="ios-bottom-nav">
-            <form action="" method="get" style="display:contents;">
-                <input type="hidden" name="tab" value="새주문">
-            </form>
+        <div class="fixed-bottom-dock">
+            <div id="dock-target" style="display: flex; gap: 6px; justify-content: space-between;">
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
-    # Streamlit 네이티브 컬럼을 활용해 4개의 가로배치 정사각형 버튼 구성
-    b1, b2, b3, b4 = st.columns(4)
-    with b1:
+    # 하단 독(Dock) 바 영역에 나란히 들어갈 4개의 가로배치 버튼
+    d1, d2, d3, d4 = st.columns(4)
+    with d1:
         if st.button("📝 새주문", use_container_width=True):
             st.session_state.active_tab = "새주문"
             st.session_state.step = "input_client"
             st.rerun()
-    with b2:
+    with d2:
         cart_label = f"🛒 장바구니{cart_badge}"
         if st.button(cart_label, use_container_width=True):
             st.session_state.active_tab = "장바구니"
             st.session_state.step = "goto_cart_tab"
             st.rerun()
-    with b3:
+    with d3:
         if st.button("📋 주문서", use_container_width=True):
             st.session_state.active_tab = "주문서"
             st.rerun()
-    with b4:
+    with d4:
         if st.button("🔄 새로고침", use_container_width=True):
             st.cache_data.clear()
             st.success("데이터 갱신 완료!")
