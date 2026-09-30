@@ -10,6 +10,11 @@ st.set_page_config(page_title="REPUBLICA B2B 발주 시스템", page_icon="👓"
 SHEET_ID = "1FiP0FFJI8OdswJa_p6ejkOpLZGbVZx9j71UUSJ6zLN4"
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyBmjN8f2UkUbL3TrRK7zvkESJ2g-ZUqquHwPPDatrieBcpUMOAXiQXjJv3rHf5JjaG-Q/exec"
 
+# 🌟 이카운트 ERP API 연동 정보 세팅
+ECOUNT_COM_CODE = "647322"
+ECOUNT_USER_ID = "REPUBLICA"
+ECOUNT_API_KEY = "0c0256f6848de49078137b95024870e0e6"
+
 @st.cache_data(ttl=3600)
 def load_data():
     try:
@@ -29,32 +34,105 @@ def load_data():
     except Exception as e:
         return None, None, None
 
-# 구글 시트로 데이터 전송하는 함수
-def send_order_to_google_sheet(cart_items, client_name, memo):
-    if not WEBHOOK_URL:
-        return False
-        
-    order_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    order_payload = []
-    
-    for item in cart_items:
-        order_payload.append([
-            order_time,
-            client_name,
-            item['모델명'],
-            item['컬러'],
-            item['수량'],
-            item['단가'],
-            item['금액'],
-            memo
-        ])
+# 🌟 이카운트 ERP '판매주문서 입력' 자동 전송 함수
+def send_order_to_ecount(cart_items, client_name, memo):
     try:
-        res = requests.post(WEBHOOK_URL, data=json.dumps(order_payload))
-        if res.status_code == 200:
+        # 1단계: ZONE 조회
+        zone_res = requests.post(
+            "https://oapi.ecount.com/OAPI/V2/Common/GetZone",
+            json={"COM_CODE": ECOUNT_COM_CODE},
+            timeout=5
+        )
+        zone_data = zone_res.json()
+        if zone_data.get("Status") != "200" and zone_data.get("Code") != "200":
+            return False
+        zone = zone_data.get("Data", {}).get("ZONE", "1")
+        
+        # 2단계: 로그인 (세션 발급)
+        login_res = requests.post(
+            f"https://oapi{zone}.ecount.com/OAPI/V2/OAPILogin",
+            json={
+                "COM_CODE": ECOUNT_COM_CODE,
+                "USER_ID": ECOUNT_USER_ID,
+                "API_CERT_KEY": ECOUNT_API_KEY,
+                "LAN_TYPE": "ko-KR"
+            },
+            timeout=5
+        )
+        login_data = login_res.json()
+        if login_data.get("Status") != "200" and login_data.get("Code") != "200":
+            return False
+        session_id = login_data.get("Data", {}).get("SESSION_ID")
+        if not session_id:
+            return False
+            
+        # 3단계: 판매주문서 입력 (SaveSalesOrder) 데이터 구성 및 전송
+        today_str = datetime.datetime.now().strftime("%Y%m%d")
+        details = []
+        
+        for idx, item in enumerate(cart_items):
+            details.append({
+                "LineNo": idx + 1,
+                "ProdCd": str(item['모델명']),
+                "ProdDes": str(item['컬러']),
+                "Qty": float(item['수량']),
+                "Price": float(item['단가']),
+                "SupplyAmt": float(item['금액']),
+                "Remarks": str(memo)
+            })
+            
+        order_payload = {
+            "SESSION_ID": session_id,
+            "Remote_IP": "",
+            "SvcType": "A",
+            "Data": {
+                "UID": "",
+                "IO_Date": today_str,
+                "CustCd": str(client_name),
+                "Remarks": str(memo),
+                "Details": details
+            }
+        }
+        
+        order_res = requests.post(
+            f"https://oapi{zone}.ecount.com/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}",
+            json=order_payload,
+            timeout=10
+        )
+        order_data = order_res.json()
+        
+        if order_data.get("Status") == "200" or order_data.get("Code") == "200":
             return True
         return False
-    except:
+    except Exception as e:
         return False
+
+# 구글 시트 + 이카운트 주문서 전송 동시 진행 함수
+def process_final_order(cart_items, client_name, memo):
+    google_success = False
+    if WEBHOOK_URL:
+        order_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        order_payload = []
+        for item in cart_items:
+            order_payload.append([
+                order_time,
+                client_name,
+                item['모델명'],
+                item['컬러'],
+                item['수량'],
+                item['단가'],
+                item['금액'],
+                memo
+            ])
+        try:
+            res = requests.post(WEBHOOK_URL, data=json.dumps(order_payload))
+            if res.status_code == 200:
+                google_success = True
+        except:
+            pass
+            
+    ecount_success = send_order_to_ecount(cart_items, client_name, memo)
+    return google_success, ecount_success
 
 df_models, df_colors, df_clients = load_data()
 
@@ -77,7 +155,6 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 💡 [핵심 강화] 컬러 선택 폼 등의 포커스로 인한 하단 덤핑을 막고 무조건 최상단 고정
     components.html(
         """
         <script>
@@ -102,7 +179,6 @@ else:
         height=0
     )
 
-    # 모바일 최적화 CSS
     st.markdown("""
         <style>
         .block-container {
@@ -159,11 +235,8 @@ else:
     
     cart_count = sum(item['수량'] for item in st.session_state.cart)
 
-    # -------------------------------------------------------------------------
-    # 왼쪽 상단 사이드바
-    # -------------------------------------------------------------------------
+    # 사이드바 메뉴
     st.sidebar.markdown("### 👓 REPUBLICA B2B")
-    
     st.sidebar.markdown("#### 📌 메인 메뉴")
     if st.sidebar.button("📝 새주문 작성", use_container_width=True):
         st.session_state.active_tab = "새주문"
@@ -181,7 +254,6 @@ else:
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("#### 📂 추가 조회 메뉴")
-    
     if st.sidebar.button("📦 재고현황", use_container_width=True):
         st.session_state.active_tab = "재고현황"
         st.rerun()
@@ -196,9 +268,6 @@ else:
 
     active_view = st.session_state.active_tab
 
-    # -------------------------------------------------------------------------
-    # 메인 화면 라우팅
-    # -------------------------------------------------------------------------
     if active_view == "새주문":
         if st.session_state.step == "input_client":
             st.markdown("""
@@ -216,7 +285,6 @@ else:
                 known_clients = df_clients[c_col].dropna().astype(str).tolist()
             
             selected_target = ""
-            
             if client_type == "기존 거래처":
                 if known_clients:
                     client_list = ["-- 거래처를 선택하세요 --"] + sorted(known_clients)
@@ -289,14 +357,10 @@ else:
                     price = 33000
 
                 mat_lower = material.lower()
-                if "티타늄" in mat_lower:
-                    icon_prefix = "🔩"
-                elif "아세테이트" in mat_lower:
-                    icon_prefix = "🏷️"
-                elif "콤비" in mat_lower:
-                    icon_prefix = "🔗"
-                else:
-                    icon_prefix = "🕶️"
+                if "티타늄" in mat_lower: icon_prefix = "🔩"
+                elif "아세테이트" in mat_lower: icon_prefix = "🏷️"
+                elif "콤비" in mat_lower: icon_prefix = "🔗"
+                else: icon_prefix = "🕶️"
 
                 btn_label = f"{icon_prefix} {model_name}"
                 if st.button(btn_label, key=f"mat_icon_btn_{idx}", use_container_width=True):
@@ -324,7 +388,6 @@ else:
             
             clean_selected_model = str(selected_model_name).split('(')[0].strip().upper()
             color_model_col = df_colors.columns[0]
-            
             safe_color_series = df_colors[color_model_col].fillna("").astype(str)
             
             matched_colors_df = df_colors[
@@ -341,27 +404,21 @@ else:
             else:
                 if st.session_state.pending_reservation_items:
                     st.warning("⚠️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
-                    
                     with st.form("reservation_confirm_form"):
                         st.write("재고가 없는 제품입니다. 예약주문으로 하시겠습니까?")
                         for p_item in st.session_state.pending_reservation_items:
                             st.markdown(f"- **{p_item['모델명']}** / {p_item['컬러']} ({p_item['수량']}개)")
                         
                         r_col1, r_col2 = st.columns(2)
-                        with r_col1:
-                            yes_sub = st.form_submit_button("예 (예약진행)", use_container_width=True, type="primary")
-                        with r_col2:
-                            no_sub = st.form_submit_button("취소", use_container_width=True)
+                        with r_col1: yes_sub = st.form_submit_button("예 (예약진행)", use_container_width=True, type="primary")
+                        with r_col2: no_sub = st.form_submit_button("취소", use_container_width=True)
                             
                         if yes_sub:
                             for p_item in st.session_state.pending_reservation_items:
                                 p_item['비고'] = "예약주문"
                                 existing = None
                                 for c_item in st.session_state.cart:
-                                    if (c_item["거래처"] == p_item["거래처"] and 
-                                        c_item["모델명"] == p_item["모델명"] and 
-                                        c_item["컬러"] == p_item["컬러"] and 
-                                        c_item.get("비고") == "예약주문"):
+                                    if (c_item["거래처"] == p_item["거래처"] and c_item["모델명"] == p_item["모델명"] and c_item["컬러"] == p_item["컬러"] and c_item.get("비고") == "예약주문"):
                                         existing = c_item
                                         break
                                 if existing:
@@ -386,10 +443,8 @@ else:
                             
                             stock_qty = 0
                             if len(row) > 3:
-                                try:
-                                    stock_qty = int(row.iloc[3])
-                                except:
-                                    stock_qty = 0
+                                try: stock_qty = int(row.iloc[3])
+                                except: stock_qty = 0
                             
                             checkbox_label = f"{color_label} (재고: {stock_qty})"
                             
@@ -433,10 +488,7 @@ else:
                                 for item in normal_items:
                                     existing_item = None
                                     for cart_item in st.session_state.cart:
-                                        if (cart_item["거래처"] == item["거래처"] and 
-                                            cart_item["모델명"] == item["모델명"] and 
-                                            cart_item["컬러"] == item["컬러"] and 
-                                            cart_item.get("비고", "") == ""):
+                                        if (cart_item["거래처"] == item["거래처"] and cart_item["모델명"] == item["모델명"] and cart_item["컬러"] == item["컬러"] and cart_item.get("비고", "") == ""):
                                             existing_item = cart_item
                                             break
                                     if existing_item:
@@ -495,7 +547,7 @@ else:
                     st.rerun()
             with sc2:
                 if st.button("🚀 최종 주문 완료하기", type="primary", use_container_width=True):
-                    is_saved = send_order_to_google_sheet(st.session_state.cart, st.session_state.current_client, st.session_state.cart_memo.strip())
+                    g_ok, e_ok = process_final_order(st.session_state.cart, st.session_state.current_client, st.session_state.cart_memo.strip())
                     
                     st.session_state.drafts.append({
                         "거래처": st.session_state.current_client,
@@ -505,16 +557,16 @@ else:
                         "요청사항": st.session_state.cart_memo.strip()
                     })
                     
-                    if is_saved:
-                        st.success("🎉 주문이 본사 구글 시트로 성공적으로 전송되었습니다!")
-                    else:
-                        st.warning("⚠️ 구글 시트 전송 실패. 앱 내역에만 임시 저장되었습니다.")
-                        
+                    msg = "🎉 주문 완료! "
+                    if g_ok: msg += "[구글시트 저장 성공] "
+                    if e_ok: msg += "[이카운트 주문서 전송 성공] "
+                    if not g_ok and not e_ok: msg = "⚠️ 외부 전송 실패. 앱 내부에만 임시 저장되었습니다."
+                    
+                    st.success(msg)
                     st.session_state.cart = []
                     st.session_state.cart_memo = ""
                     st.session_state.step = "input_client"
 
-    # 장바구니 화면
     elif active_view == "장바구니":
         st.title("🛒 장바구니")
         st.markdown(f"**{st.session_state.current_client or '미지정'}**")
@@ -561,7 +613,7 @@ else:
                     st.rerun()
             with col2:
                 if st.button("🚀 주문완료", type="primary", use_container_width=True):
-                    is_saved = send_order_to_google_sheet(st.session_state.cart, st.session_state.current_client, st.session_state.cart_memo.strip())
+                    g_ok, e_ok = process_final_order(st.session_state.cart, st.session_state.current_client, st.session_state.cart_memo.strip())
                     
                     st.session_state.drafts.append({
                         "거래처": st.session_state.current_client,
@@ -571,11 +623,12 @@ else:
                         "요청사항": st.session_state.cart_memo.strip()
                     })
                     
-                    if is_saved:
-                        st.success("🎉 주문 완료! 본사 구글 시트로 전송되었습니다.")
-                    else:
-                        st.warning("⚠️ 구글 시트 연동 실패. 앱 내역에만 임시 저장되었습니다.")
-                        
+                    msg = "🎉 주문 완료! "
+                    if g_ok: msg += "[구글시트 저장 성공] "
+                    if e_ok: msg += "[이카운트 주문서 전송 성공] "
+                    if not g_ok and not e_ok: msg = "⚠️ 외부 전송 실패. 앱 내부에만 임시 저장되었습니다."
+                    
+                    st.success(msg)
                     st.session_state.cart = []
                     st.session_state.cart_memo = ""
                     st.session_state.step = "input_client"
@@ -588,7 +641,6 @@ else:
         else:
             st.info("장바구니가 비어 있습니다.")
 
-    # 주문서 화면
     elif active_view == "주문서":
         st.markdown("#### 📋 작성된 주문서 리스트")
         st.markdown("---")
@@ -651,7 +703,6 @@ else:
         else:
             st.info("작성된 주문서가 없습니다.")
 
-    # 재고현황 화면
     elif active_view == "재고현황":
         st.title("📦 재고 현황")
         st.markdown("---")
@@ -660,7 +711,6 @@ else:
         else:
             st.warning("재고 데이터를 불러올 수 없습니다.")
 
-    # 매장별 히스토리 화면
     elif active_view == "매장별 히스토리":
         st.title("📊 매장별 히스토리")
         st.markdown("---")
@@ -691,12 +741,9 @@ else:
                 except: pass
 
             col_h1, col_h2, col_h3 = st.columns(3)
-            with col_h1:
-                st.metric(label="적립잔액", value=ad_balance)
-            with col_h2:
-                st.metric(label="미수금", value=mi_suku)
-            with col_h3:
-                st.metric(label="미출고", value=f"{sheet_res}개")
+            with col_h1: st.metric(label="적립잔액", value=ad_balance)
+            with col_h2: st.metric(label="미수금", value=mi_suku)
+            with col_h3: st.metric(label="미출고", value=f"{sheet_res}개")
                 
             if sheet_memo and sheet_memo != "nan" and sheet_memo != "없음":
                 st.info(f"📝 {sheet_memo}")
@@ -717,7 +764,6 @@ else:
             else:
                 st.info("미출고 예약 내역 없음")
 
-    # 실적현황 화면
     elif active_view == "실적현황":
         st.title("📈 실적현황")
         st.markdown("---")
@@ -739,16 +785,10 @@ else:
             total_qty = df_orders_all['수량'].sum()
             
             m1, m2 = st.columns(2)
-            with m1:
-                st.metric(label="총 매출액", value=f"₩ {total_sales:,}")
-            with m2:
-                st.metric(label="총 판매수량", value=f"{total_qty:,}개")
+            with m1: st.metric(label="총 매출액", value=f"₩ {total_sales:,}")
+            with m2: st.metric(label="총 판매수량", value=f"{total_qty:,}개")
 
-    # -------------------------------------------------------------------------
-    # 하단 장바구니 전용 버튼
-    # -------------------------------------------------------------------------
     cart_badge_str = f" ({cart_count}개)" if cart_count > 0 else ""
-    
     st.markdown("<br>", unsafe_allow_html=True) 
     st.markdown("---")
     
