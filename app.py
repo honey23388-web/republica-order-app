@@ -34,7 +34,7 @@ def load_data():
     except Exception as e:
         return None, None, None
 
-# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (ZONE 로그인 규격 수정)
+# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수
 def send_order_to_ecount(cart_items, client_name, memo, df_colors):
     try:
         # 1단계: ZONE 조회
@@ -51,9 +51,10 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
             
         zone = zone_info.get("ZONE", "CC")
         
-        # 2단계: 로그인 (세션 발급 - ZONE을 JSON 바디에 포함)
+        # 2단계: 로그인 (세션 발급 - 올바른 도메인 및 ZONE 바디 포함)
+        login_url = f"https://sboapi{zone}.ecount.com/OAPI/V2/OAPILogin"
         login_res = requests.post(
-            "https://sboapi.ecount.com/OAPI/V2/OAPILogin",
+            login_url,
             json={
                 "COM_CODE": ECOUNT_COM_CODE,
                 "USER_ID": ECOUNT_USER_ID,
@@ -118,8 +119,9 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
             }
         }
         
+        order_url = f"https://sboapi{zone}.ecount.com/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}"
         order_res = requests.post(
-            f"https://sboapi.ecount.com/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}",
+            order_url,
             json=order_payload,
             timeout=10
         )
@@ -387,7 +389,7 @@ else:
                 if "티타늄" in mat_lower: icon_prefix = "🔩"
                 elif "아세테이트" in mat_lower: icon_prefix = "🏷️"
                 elif "콤비" in mat_lower: icon_prefix = "🔗"
-                else: icon_prefix = "🕶️️"
+                else: icon_prefix = "🕶️"
 
                 btn_label = f"{icon_prefix} {model_name}"
                 if st.button(btn_label, key=f"mat_icon_btn_{idx}", use_container_width=True):
@@ -406,7 +408,7 @@ else:
                 </div>
             """, unsafe_allow_html=True)
             
-            if st.button("⬅️️ 모델 다시 고르기", use_container_width=True):
+            if st.button("⬅️ 모델 다시 고르기", use_container_width=True):
                 st.session_state.step = "select_model"
                 st.rerun()
 
@@ -430,7 +432,7 @@ else:
                 st.warning(f"⚠️ 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
                 if st.session_state.pending_reservation_items:
-                    st.warning("⚠️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
+                    st.warning("⚠️️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
                     with st.form("reservation_confirm_form"):
                         st.write("재고가 없는 제품입니다. 예약주문으로 하시겠습니까?")
                         for p_item in st.session_state.pending_reservation_items:
