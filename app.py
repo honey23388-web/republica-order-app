@@ -9,7 +9,7 @@ st.set_page_config(page_title="REPUBLICA B2B 발주 시스템", page_icon="👓"
 
 SHEET_ID = "1FiP0FFJI8OdswJa_p6ejkOpLZGbVZx9j71UUSJ6zLN4"
 # ★ 대표님의 실제 구글 앱스 스크립트 웹 앱 URL 적용 완료 ★
-WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyBmjN8f2UkUbL3TrRK7zvkESJ2g-ZUqquHwPPDatrieBcpUMOAXiQXjJv3rHf5JjaG-Q/exec"
+WEBHOOK_URL = https://script.google.com/macros/s/AKfycbzZhTmVrzEyS-sG-fAv4vdg_5HFfrYlMO3kOLAPJasN-fSniGM0B6FUzlyLU9wXs7FbsQ/exec
 
 @st.cache_data(ttl=3600)
 def load_data():
