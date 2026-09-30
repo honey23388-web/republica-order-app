@@ -28,7 +28,7 @@ def load_data():
 df_models, df_colors, df_clients = load_data()
 
 if df_models is None or df_models.empty:
-    st.error("⚠️️ 구글 시트 데이터를 불러오는 데 실패했습니다.")
+    st.error("⚠️ 구글 시트 데이터를 불러오는 데 실패했습니다.")
     st.info("💡 해결 방법:\n1. 구글 시트 링크 및 공유 설정을 확인해 주세요.\n2. 탭 이름이 **model**, **color**, **client**인지 확인해 주세요.")
 else:
     if 'cart' not in st.session_state:
@@ -84,7 +84,7 @@ else:
             font-size: 18px;
             font-weight: 700;
             letter-spacing: 0.5px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
         div.stButton > button {
@@ -261,17 +261,19 @@ else:
                     st.rerun()
 
         elif st.session_state.step == "select_color":
+            # 🔥 상단 박스에는 거래처만 두고, 모델명은 아래 검은 글씨로 분리 표기
             st.markdown(f"""
                 <div class="client-highlight-box">
-                    📍 {st.session_state.current_client}<br>📌 {st.session_state.selected_model}
+                    📍 {st.session_state.current_client}
+                </div>
+                <div style="font-size: 16px; font-weight: 800; color: #111111; margin-bottom: 10px; text-align: center;">
+                    📌 {st.session_state.selected_model}
                 </div>
             """, unsafe_allow_html=True)
             
             if st.button("⬅️ 모델 다시 고르기", use_container_width=True):
                 st.session_state.step = "select_model"
                 st.rerun()
-                
-            # 🔥 불필요한 구분선과 '컬러별 수량 지정' 텍스트를 완전히 제거하여 여백 압축
 
             selected_model_name = st.session_state.selected_model
             unit_price = st.session_state.unit_price
@@ -291,7 +293,7 @@ else:
                 ]
 
             if matched_colors_df.empty:
-                st.warning(f"⚠️ 매칭되는 컬러 정보를 찾지 못했습니다.")
+                st.warning(f"⚠️️ 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
                 if st.session_state.pending_reservation_items:
                     st.warning("⚠️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
