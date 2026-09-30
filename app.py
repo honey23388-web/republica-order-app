@@ -261,7 +261,6 @@ else:
                     st.rerun()
 
         elif st.session_state.step == "select_color":
-            # 🔥 상단 박스에는 거래처만 두고, 모델명은 아래 검은 글씨로 분리 표기
             st.markdown(f"""
                 <div class="client-highlight-box">
                     📍 {st.session_state.current_client}
@@ -293,7 +292,7 @@ else:
                 ]
 
             if matched_colors_df.empty:
-                st.warning(f"⚠️️ 매칭되는 컬러 정보를 찾지 못했습니다.")
+                st.warning(f"⚠️ 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
                 if st.session_state.pending_reservation_items:
                     st.warning("⚠️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
@@ -351,10 +350,11 @@ else:
                             
                             col_chk, col_qty = st.columns([2.5, 1])
                             with col_chk:
-                                st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
+                                st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
                                 is_checked = st.checkbox(checkbox_label, key=f"chk_{clean_selected_model}_{idx}")
                             with col_qty:
-                                qty = st.number_input("수량", min_value=1, max_value=100, value=1, step=1, key=f"qty_{clean_selected_model}_{idx}")
+                                # 🔥 수량 라벨 숨김 처리 (label_visibility="collapsed")
+                                qty = st.number_input("수량", min_value=1, max_value=100, value=1, step=1, key=f"qty_{clean_selected_model}_{idx}", label_visibility="collapsed")
                             
                             st.markdown("<hr style='margin: 4px 0; border: 0; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
                             
