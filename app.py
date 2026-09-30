@@ -34,7 +34,7 @@ def load_data():
     except Exception as e:
         return None, None, None
 
-# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (F열 매장코드 매핑 반영)
+# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (SESSION_ID 쿼리 스트링 결합 및 F열 매장코드 반영)
 def send_order_to_ecount(cart_items, client_name, memo, df_colors, df_clients):
     try:
         # 1단계: ZONE 조회
@@ -76,7 +76,7 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors, df_clients):
             st.error(f"이카운트 로그인 실패: {login_data}")
             return False
             
-        # 💡 매장명으로 client 시트에서 F열(매장코드) 찾아 매핑하기
+        # 💡 F열(매장코드) 매핑 처리
         cust_cd = client_name
         try:
             clean_target = str(client_name).replace("[신규]", "").strip().upper()
@@ -130,14 +130,15 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors, df_clients):
             "Data": {
                 "UID": "",
                 "IO_Date": today_str,
-                "CustCd": str(cust_cd),  # 맵핑된 정확한 이카운트 매장 코드 전송
+                "CustCd": str(cust_cd),
                 "Remarks": str(memo),
                 "Details": details
             }
         }
         
+        # 💡 올바른 SESSION_ID 쿼리 스트링 포함 엔드포인트 호출
         order_res = requests.post(
-            f"{base_url}/OAPI/V2/Sale/SaveSalesOrder",
+            f"{base_url}/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}",
             json=order_payload,
             timeout=10
         )
@@ -448,7 +449,7 @@ else:
                 st.warning(f"⚠️ 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
                 if st.session_state.pending_reservation_items:
-                    st.warning("⚠️️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
+                    st.warning("⚠️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
                     with st.form("reservation_confirm_form"):
                         st.write("재고가 없는 제품입니다. 예약주문으로 하시겠습니까?")
                         for p_item in st.session_state.pending_reservation_items:
