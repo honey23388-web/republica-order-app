@@ -46,7 +46,7 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 CSS 주입
+    # 모바일 최적화 및 소재별 버튼 색상 CSS 주입
     st.markdown("""
         <style>
         .block-container {
@@ -87,13 +87,45 @@ else:
             margin-bottom: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
-        div.stButton > button {
+        
+        /* 🎨 소재별 커스텀 버튼 색상 클래스 정의 */
+        div.titan-btn button {
+            background-color: #444444 !important;
+            color: #ffffff !important;
+            border: 1px solid #333333 !important;
             border-radius: 8px;
             font-weight: 700;
             height: 48px;
             font-size: 15px;
-            transition: all 0.2s ease-in-out;
         }
+        div.acetate-btn button {
+            background-color: #8c5830 !important;
+            color: #ffffff !important;
+            border: 1px solid #6e4424 !important;
+            border-radius: 8px;
+            font-weight: 700;
+            height: 48px;
+            font-size: 15px;
+        }
+        div.combi-btn button {
+            background-color: #1e6b54 !important;
+            color: #ffffff !important;
+            border: 1px solid #144b3c !important;
+            border-radius: 8px;
+            font-weight: 700;
+            height: 48px;
+            font-size: 15px;
+        }
+        div.etc-btn button {
+            background-color: #ffffff !important;
+            color: #111111 !important;
+            border: 1px solid #cccccc !important;
+            border-radius: 8px;
+            font-weight: 700;
+            height: 48px;
+            font-size: 15px;
+        }
+        
         div.stButton > button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -204,6 +236,7 @@ else:
             st.markdown("---")
             
             model_col = df_models.columns[0]
+            material_col = df_models.columns[1] if len(df_models.columns) > 1 else None
             price_col = df_models.columns[2] if len(df_models.columns) > 2 else None
 
             all_model_names = df_models[model_col].astype(str).tolist()
@@ -227,20 +260,32 @@ else:
             st.markdown("---")
             st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 8px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
             
-            # 🔥 각 모델명 자체가 큼직한 버튼이 되도록 구현 (화면 전체 폭을 채움)
+            # 🔥 소재별 지정된 색상 클래스 적용하여 렌더링
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
+                material = str(row[material_col]).strip() if material_col else "기타"
                 try:
-                    price = int(row.iloc[2]) if len(row.iloc) > 2 else 33000
+                    price = int(row[price_col]) if price_col else 33000
                 except:
                     price = 33000
 
-                btn_label = f"🕶️ {model_name}"
-                if st.button(btn_label, key=f"model_name_btn_{idx}", use_container_width=True, type="primary"):
+                mat_lower = material.lower()
+                if "티타늄" in mat_lower:
+                    css_class = "titan-btn"
+                elif "아세테이트" in mat_lower:
+                    css_class = "acetate-btn"
+                elif "콤비" in mat_lower:
+                    css_class = "combi-btn"
+                else:
+                    css_class = "etc-btn"
+
+                st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
+                if st.button(f"🕶️ {model_name}", key=f"colored_model_btn_{idx}", use_container_width=True):
                     st.session_state.selected_model = model_name
                     st.session_state.unit_price = price
                     st.session_state.step = "select_color"
                     st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
 
             if len(st.session_state.cart) > 0:
                 st.markdown("---")
