@@ -43,16 +43,15 @@ else:
         st.session_state.pending_reservation_items = []
     if 'cart_memo' not in st.session_state:
         st.session_state.cart_memo = ""
-    # 앱 내부 화면 전환 상태 관리 (하단 탭 바 연동)
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 CSS 스타일 주입 (상단 패딩 축소 및 하단 고정바 스타일)
+    # 모바일 최적화 및 하단 아이폰 스타일 네비게이션 바 CSS 주입
     st.markdown("""
         <style>
         .block-container {
-            padding-top: 1rem;
-            padding-bottom: 5rem; /* 하단 네비게이션 바 공간 확보 */
+            padding-top: 0.8rem;
+            padding-bottom: 5.5rem; /* 하단 바에 내용이 가리지 않도록 여백 확보 */
         }
         .main {
             background-color: #fcfcfc;
@@ -85,6 +84,48 @@ else:
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
+        
+        /* 📱 아이폰 하단 독(Dock) 바 스타일 */
+        .ios-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #dcdcdc;
+            padding: 8px 10px 12px 10px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 99999;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.06);
+        }
+        .ios-nav-btn {
+            background: none;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            width: 70px;
+            height: 50px;
+            border-radius: 10px;
+            transition: background 0.15s;
+        }
+        .ios-nav-btn:active {
+            background-color: rgba(0,0,0,0.05);
+        }
+        .ios-nav-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+        .ios-nav-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #333333;
+        }
         </style>
     """, unsafe_allow_html=True)
     
@@ -113,7 +154,6 @@ else:
         label_visibility="collapsed"
     )
     
-    # 사이드바에서 조회 메뉴를 선택했을 경우 우선 적용
     if sub_menu != "선택 안함 (메인 화면 유지)":
         if "재고현황" in sub_menu:
             active_view = "재고현황"
@@ -125,10 +165,8 @@ else:
         active_view = st.session_state.active_tab
 
     # -------------------------------------------------------------------------
-    # 메인 화면 라우팅 (하단 탭 바 또는 사이드바 선택에 따름)
+    # 메인 화면 라우팅
     # -------------------------------------------------------------------------
-    
-    # 1. 새주문 화면
     if active_view == "새주문":
         if st.session_state.step == "input_client":
             st.markdown("""
@@ -192,7 +230,7 @@ else:
             all_model_names = df_models[model_col].astype(str).tolist()
             search_query = st.selectbox("모델명 검색 또는 선택", ["-- 모델 검색 --"] + all_model_names)
             
-            if search_query != "-- model 검색 --" and search_query != "-- 모델 검색 --":
+            if search_query != "-- 모델 검색 --":
                 matched_row = df_models[df_models[model_col].astype(str) == search_query].iloc[0]
                 model_name = str(matched_row[model_col])
                 material = str(matched_row[material_col]).strip() if material_col else "기타"
@@ -433,7 +471,7 @@ else:
                 with c2:
                     st.write(f"수량: {item['수량']}개 (₩ {item['금액']:,})")
                 with c3:
-                    if st.button("🗑️ 삭제", key=f"step_del_{idx}"):
+                    if st.button("🗑️️ 삭제", key=f"step_del_{idx}"):
                         st.session_state.cart.pop(idx)
                         st.rerun()
                         
@@ -471,7 +509,7 @@ else:
                     st.session_state.step = "input_client"
                     st.rerun()
 
-    # 2. 장바구니 화면
+    # 장바구니 화면
     elif active_view == "장바구니":
         st.title("🛒 장바구니")
         st.markdown(f"**{st.session_state.current_client or '미지정'}**")
@@ -538,7 +576,7 @@ else:
         else:
             st.info("장바구니가 비어 있습니다.")
 
-    # 3. 주문서 화면
+    # 주문서 화면
     elif active_view == "주문서":
         st.title("📋 주문서 리스트")
         st.markdown("---")
@@ -601,7 +639,7 @@ else:
         else:
             st.info("작성된 주문서가 없습니다.")
 
-    # 4. 재고현황 화면 (사이드바 메뉴 연동)
+    # 재고현황 화면
     elif active_view == "재고현황":
         st.title("📦 재고 현황")
         st.markdown("---")
@@ -610,7 +648,7 @@ else:
         else:
             st.warning("재고 데이터를 불러올 수 없습니다.")
 
-    # 5. 매장별 히스토리 화면 (사이드바 메뉴 연동)
+    # 매장별 히스토리 화면
     elif active_view == "매장별 히스토리":
         st.title("📊 매장별 히스토리")
         st.markdown("---")
@@ -667,7 +705,7 @@ else:
             else:
                 st.info("미출고 예약 내역 없음")
 
-    # 6. 실적현황 화면 (사이드바 메뉴 연동)
+    # 실적현황 화면
     elif active_view == "실적현황":
         st.title("📈 실적현황")
         st.markdown("---")
@@ -695,37 +733,29 @@ else:
                 st.metric(label="총 판매수량", value=f"{total_qty:,}개")
 
     # -------------------------------------------------------------------------
-    # [하단 고정 네비게이션 탭 바 (옛날 아이폰 하부 스타일)]
+    # [하단 고정 아이폰 스타일 가로배치 네비게이션 바]
     # -------------------------------------------------------------------------
-    st.markdown("""
-        <style>
-        /* 하단 고정 네비게이션 바 컨테이너 */
-        .fixed-bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: #ffffff;
-            border-top: 1px solid #e0e0e0;
-            padding: 8px 10px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 99999;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-        }
-        </style>
+    cart_badge = f" ({cart_count})" if cart_count > 0 else ""
+    
+    # 쿼리 파라미터나 콜백을 활용해 하단 탭 클릭 시 즉시 화면 전환되도록 Streamlit 폼/버튼 매커니즘 구현
+    st.markdown(f"""
+        <div class="ios-bottom-nav">
+            <form action="" method="get" style="display:contents;">
+                <input type="hidden" name="tab" value="새주문">
+            </form>
+        </div>
     """, unsafe_allow_html=True)
 
-    # 하단에 항상 고정되는 4개의 핵심 버튼 배치
+    # Streamlit 네이티브 컬럼을 활용해 4개의 가로배치 정사각형 버튼 구성
     b1, b2, b3, b4 = st.columns(4)
     with b1:
         if st.button("📝 새주문", use_container_width=True):
             st.session_state.active_tab = "새주문"
+            st.session_state.step = "input_client"
             st.rerun()
     with b2:
-        cart_btn_label = f"🛒 장바구니({cart_count})" if cart_count > 0 else "🛒 장바구니"
-        if st.button(cart_btn_label, use_container_width=True):
+        cart_label = f"🛒 장바구니{cart_badge}"
+        if st.button(cart_label, use_container_width=True):
             st.session_state.active_tab = "장바구니"
             st.session_state.step = "goto_cart_tab"
             st.rerun()
