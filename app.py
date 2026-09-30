@@ -34,7 +34,7 @@ def load_data():
     except Exception as e:
         return None, None, None
 
-# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (로그인 성공 판정 수정)
+# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (SESSION_ID 추출 경로 수정)
 def send_order_to_ecount(cart_items, client_name, memo, df_colors):
     try:
         # 1단계: ZONE 조회
@@ -65,10 +65,15 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
             timeout=5
         )
         login_data = login_res.json()
-        login_info = login_data.get("Data", {})
         
-        # 세션 ID 추출 (대소문자 및 딕셔너리 구조 유연하게 대응)
-        session_id = login_info.get("SESSION_ID") or login_info.get("Session_Id")
+        # 💡 정확한 세션 ID 경로 추출 (Data -> Datas -> SESSION_ID)
+        login_data_block = login_data.get("Data", {})
+        session_id = (
+            login_data_block.get("Datas", {}).get("SESSION_ID") or 
+            login_data_block.get("SESSION_ID") or 
+            login_data_block.get("Session_Id")
+        )
+        
         if not session_id:
             st.error(f"이카운트 로그인 실패: {login_data}")
             return False
