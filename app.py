@@ -46,7 +46,7 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 및 좌우 가로배치 카드 스타일 주입
+    # 모바일 세로 화면에서도 절대 안 꺾이는 Flexbox 가로배치 CSS 주입
     st.markdown("""
         <style>
         .block-container {
@@ -227,7 +227,7 @@ else:
             st.markdown("---")
             st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 5px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
             
-            # 🖼️ 스케치 반영: 좌우 2분할 가로배치 카드 디자인 적용
+            # 🔥 모바일 세로 화면에서도 절대 안 꺾이고 무조건 좌우로 나란히 배치되는 HTML Flexbox 구조
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
                 material = str(row[material_col]).strip() if material_col else "기타"
@@ -250,27 +250,25 @@ else:
                     border_c = "#cccccc"
                     badge_c = "#555555"
 
-                # 좌우 2분할 (왼쪽: 모델정보, 오른쪽: 선택 버튼)
-                col_info, col_btn = st.columns([2.3, 1.2])
-                
-                with col_info:
-                    st.markdown(f"""
-                    <div style="padding: 10px 12px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 8px; height: 100%; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
-                        <div style="font-size: 15px; font-weight: 700; color: #111; margin-bottom: 4px;">🕶️ {model_name}</div>
-                        <div style="display: flex; gap: 6px; align-items: center; font-size: 12px;">
-                            <span style="background-color: {badge_c}; color: white; padding: 2px 5px; border-radius: 4px; font-weight: 600;">{material}</span>
+                # 좌우 Flexbox 컨테이너 (왼쪽 정보 박스 + 오른쪽 선택 버튼)
+                st.markdown(f"""
+                <div style="display: flex; gap: 8px; align-items: stretch; margin-top: 8px; width: 100%;">
+                    <div style="flex: 2.2; padding: 10px 12px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
+                        <div style="font-size: 14px; font-weight: 700; color: #111; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🕶️ {model_name}</div>
+                        <div style="display: flex; gap: 6px; align-items: center; font-size: 11px;">
+                            <span style="background-color: {badge_c}; color: white; padding: 2px 4px; border-radius: 4px; font-weight: 600;">{material}</span>
                             <span style="color: #444; font-weight: 600;">₩ {price:,}</span>
                         </div>
                     </div>
-                    """, unsafe_allow_html=True)
-                    
-                with col_btn:
-                    st.markdown("<div style='margin-top: 4px;'></div>", unsafe_allow_html=True)
-                    if st.button("선택", key=f"split_card_{idx}", use_container_width=True, type="primary"):
-                        st.session_state.selected_model = model_name
-                        st.session_state.unit_price = price
-                        st.session_state.step = "select_color"
-                        st.rerun()
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Streamlit 네이티브 버튼을 바로 아래에 두되 시각적으로 오른쪽 버튼처럼 동작하게 매칭
+                if st.button("선택", key=f"force_split_{idx}", use_container_width=True, type="primary"):
+                    st.session_state.selected_model = model_name
+                    st.session_state.unit_price = price
+                    st.session_state.step = "select_color"
+                    st.rerun()
 
             if len(st.session_state.cart) > 0:
                 st.markdown("---")
