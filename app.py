@@ -88,7 +88,7 @@ else:
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
         
-        /* 🎨 소재별 커스텀 버튼 색상 클래스 정의 */
+        /* 🎨 소재별 맞춤 컬러 버튼 디자인 */
         div.titan-btn button {
             background-color: #444444 !important;
             color: #ffffff !important;
@@ -260,7 +260,7 @@ else:
             st.markdown("---")
             st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 8px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
             
-            # 🔥 소재별 지정된 색상 클래스 적용하여 렌더링
+            # 🔥 소재별 맞춤 컬러 클래스를 적용하여 모델 버튼 렌더링
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
                 material = str(row[material_col]).strip() if material_col else "기타"
@@ -280,7 +280,7 @@ else:
                     css_class = "etc-btn"
 
                 st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
-                if st.button(f"🕶️ {model_name}", key=f"colored_model_btn_{idx}", use_container_width=True):
+                if st.button(f"🕶️ {model_name}", key=f"mat_colored_btn_{idx}", use_container_width=True):
                     st.session_state.selected_model = model_name
                     st.session_state.unit_price = price
                     st.session_state.step = "select_color"
@@ -597,7 +597,7 @@ else:
                         with col_q:
                             new_qty = st.number_input("수량", min_value=1, max_value=100, value=int(item['수량']), key=f"edit_q_{i}_{item_idx}", label_visibility="collapsed")
                         with col_del:
-                            remove_item = st.button("🗑️", key=f"del_item_{i}_{item_idx}")
+                            remove_item = st.button("🗑️️", key=f"del_item_{i}_{item_idx}")
                         
                         if not remove_item:
                             updated_items.append({
