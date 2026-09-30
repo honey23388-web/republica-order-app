@@ -46,12 +46,12 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 및 이미지 탭 바 CSS 주입
+    # 모바일 최적화 (불필요한 아이콘 탭 바 CSS 삭제 완료)
     st.markdown("""
         <style>
         .block-container {
             padding-top: 2.8rem !important;
-            padding-bottom: 7rem !important;
+            padding-bottom: 3rem !important;
         }
         .main {
             background-color: #fcfcfc;
@@ -97,37 +97,6 @@ else:
         div.stButton > button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .fixed-bottom-dock {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: #ffffff;
-            border-top: 1px solid #e0e0e0;
-            padding: 8px 12px 14px 12px;
-            z-index: 999999;
-            box-shadow: 0 -4px 15px rgba(0,0,0,0.08);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-        }
-        .tab-btn-custom {
-            background: none;
-            border: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 700;
-            color: #333;
-            text-decoration: none;
-        }
-        .tab-btn-custom img {
-            width: 26px;
-            height: 26px;
-            margin-bottom: 3px;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -505,7 +474,7 @@ else:
                 with c2:
                     st.write(f"{item['수량']}개 (₩ {item['금액']:,})")
                 with c3:
-                    if st.button("🗑️️", key=f"cart_page_del_{idx}"):
+                    if st.button("🗑", key=f"cart_page_del_{idx}"):
                         st.session_state.cart.pop(idx)
                         st.rerun()
                         
@@ -714,47 +683,29 @@ else:
                 st.metric(label="총 판매수량", value=f"{total_qty:,}개")
 
     # -------------------------------------------------------------------------
-    # [하단 고정 이미지 아이콘 탭 바 (assets 폴더 경로 직접 참조)]
+    # 하단 이모지 네비게이션 버튼 (문제의 HTML/이미지 삭제 후 교체)
     # -------------------------------------------------------------------------
     cart_badge_str = f" ({cart_count})" if cart_count > 0 else ""
     
-    st.markdown(f"""
-        <div class="fixed-bottom-dock">
-            <button class="tab-btn-custom" onclick="window.location.href='/?tab=new';">
-                <img src="app/static/new.png" onerror="this.src='https://raw.githubusercontent.com/honey23388-web/republica-order-app/main/assets/new.png'" />새주문
-            </button>
-            <button class="tab-btn-custom" onclick="window.location.href='/?tab=cart';">
-                <img src="app/static/cart.png" onerror="this.src='https://raw.githubusercontent.com/honey23388-web/republica-order-app/main/assets/cart.png'" />장바구니{cart_badge_str}
-            </button>
-            <button class="tab-btn-custom" onclick="window.location.href='/?tab=list';">
-                <img src="app/static/list.png" onerror="this.src='https://raw.githubusercontent.com/honey23388-web/republica-order-app/main/assets/list.png'" />주문서
-            </button>
-            <button class="tab-btn-custom" onclick="window.location.reload();">
-                <img src="app/static/sync.png" onerror="this.src='https://raw.githubusercontent.com/honey23388-web/republica-order-app/main/assets/sync.png'" />새로고침
-            </button>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # 파이썬 네이티브 하단 버튼 (탭 클릭 상태 연동 백업용)
     st.markdown("---")
     d1, d2, d3, d4 = st.columns(4)
     with d1:
-        if st.button("📝 새주문", use_container_width=True):
+        if st.button("📝", use_container_width=True):
             st.session_state.active_tab = "새주문"
             st.session_state.step = "input_client"
             st.rerun()
     with d2:
-        cart_label = f"🛒 장바구니{cart_badge_str}"
+        cart_label = f"🛒{cart_badge_str}"
         if st.button(cart_label, use_container_width=True):
             st.session_state.active_tab = "장바구니"
             st.session_state.step = "goto_cart_tab"
             st.rerun()
     with d3:
-        if st.button("📋 주문서", use_container_width=True):
+        if st.button("📋", use_container_width=True):
             st.session_state.active_tab = "주문서"
             st.rerun()
     with d4:
-        if st.button("🔄 새로고침", use_container_width=True):
+        if st.button("🔄", use_container_width=True):
             st.cache_data.clear()
             st.success("데이터 갱신 완료!")
             st.rerun()
