@@ -46,12 +46,13 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 및 하단 고정 가로배치 탭 바 CSS 주입
+    # 📱 상단 바 겹침 방지 패딩(padding-top) 및 하단 탭 바 스타일 주입
     st.markdown("""
         <style>
+        /* Streamlit 상단 기본 툴바에 콘텐츠가 가리지 않도록 상단 여백 확보 */
         .block-container {
-            padding-top: 0.8rem;
-            padding-bottom: 6rem;
+            padding-top: 2.8rem !important;
+            padding-bottom: 6rem !important;
         }
         .main {
             background-color: #fcfcfc;
@@ -190,7 +191,6 @@ else:
                     st.rerun()
 
         elif st.session_state.step == "select_model":
-            # 🕶️ 요청사항 반영: 최상단 헤더 제거 및 현재 거래처명을 검은색 사각박스(흰 글씨)로 강조
             st.markdown(f"""
                 <div class="client-highlight-box">
                     📍 {st.session_state.current_client}
@@ -203,7 +203,6 @@ else:
                 
             st.markdown("---")
             
-            # 🔍 모델 직접 검색 (자동완성) - 큰 텍스트 제거하고 깔끔하게 배치
             model_col = df_models.columns[0]
             material_col = df_models.columns[1] if len(df_models.columns) > 1 else None
             price_col = df_models.columns[2] if len(df_models.columns) > 2 else None
@@ -228,7 +227,6 @@ else:
                     st.rerun()
 
             st.markdown("---")
-            # 📋 "ALL MODELS" 소형 텍스트로 변경
             st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 5px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
             
             for idx, row in df_models.iterrows():
