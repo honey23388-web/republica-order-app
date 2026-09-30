@@ -46,7 +46,7 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 및 소재별 버튼 색상 강제 적용 CSS 주입
+    # 모바일 최적화 CSS 주입
     st.markdown("""
         <style>
         .block-container {
@@ -87,60 +87,13 @@ else:
             margin-bottom: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
-        
-        /* 🎨 소재별 맞춤 컬러 버튼 강제 스타일링 */
-        div.titan-btn button {
-            background-color: #444444 !important;
-            color: #ffffff !important;
-            border: 1px solid #333333 !important;
-            border-radius: 8px !important;
-            font-weight: 700 !important;
-            height: 48px !important;
-            font-size: 15px !important;
+        div.stButton > button {
+            border-radius: 8px;
+            font-weight: 700;
+            height: 48px;
+            font-size: 15px;
+            transition: all 0.2s ease-in-out;
         }
-        div.titan-btn button p {
-            color: #ffffff !important;
-        }
-
-        div.acetate-btn button {
-            background-color: #8c5830 !important;
-            color: #ffffff !important;
-            border: 1px solid #6e4424 !important;
-            border-radius: 8px !important;
-            font-weight: 700 !important;
-            height: 48px !important;
-            font-size: 15px !important;
-        }
-        div.acetate-btn button p {
-            color: #ffffff !important;
-        }
-
-        div.combi-btn button {
-            background-color: #1e6b54 !important;
-            color: #ffffff !important;
-            border: 1px solid #144b3c !important;
-            border-radius: 8px !important;
-            font-weight: 700 !important;
-            height: 48px !important;
-            font-size: 15px !important;
-        }
-        div.combi-btn button p {
-            color: #ffffff !important;
-        }
-
-        div.etc-btn button {
-            background-color: #ffffff !important;
-            color: #111111 !important;
-            border: 1px solid #cccccc !important;
-            border-radius: 8px !important;
-            font-weight: 700 !important;
-            height: 48px !important;
-            font-size: 15px !important;
-        }
-        div.etc-btn button p {
-            color: #111111 !important;
-        }
-        
         div.stButton > button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -275,7 +228,7 @@ else:
             st.markdown("---")
             st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 8px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
             
-            # 🔥 소재별 컬러 클래스를 감싼 버튼 렌더링
+            # 🔥 소재별 테스트 아이콘 적용
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
                 material = str(row[material_col]).strip() if material_col else "기타"
@@ -286,21 +239,20 @@ else:
 
                 mat_lower = material.lower()
                 if "티타늄" in mat_lower:
-                    css_class = "titan-btn"
+                    icon_prefix = "🔩" # 티타늄
                 elif "아세테이트" in mat_lower:
-                    css_class = "acetate-btn"
+                    icon_prefix = "🏷️" # 아세테이트
                 elif "콤비" in mat_lower:
-                    css_class = "combi-btn"
+                    icon_prefix = "🔗" # 콤비
                 else:
-                    css_class = "etc-btn"
+                    icon_prefix = "🕶️" # 기타
 
-                st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
-                if st.button(f"🕶️ {model_name}", key=f"force_colored_btn_{idx}", use_container_width=True):
+                btn_label = f"{icon_prefix} {model_name}"
+                if st.button(btn_label, key=f"test_icon_btn_{idx}", use_container_width=True):
                     st.session_state.selected_model = model_name
                     st.session_state.unit_price = price
                     st.session_state.step = "select_color"
                     st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
 
             if len(st.session_state.cart) > 0:
                 st.markdown("---")
