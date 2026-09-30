@@ -47,12 +47,12 @@ else:
         st.session_state.active_tab = "새주문"
 
     # 하단 아이콘 Base64 데이터
-    icon_new = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAsNJREFUeJztW81qG0UQvjOz2lW8S3O2C22iN0qCHjrwqge/QD9DP0A/Rj9AP8Q1OimQhBBLwSRElM6m2W3t3p29vTNDt0oN3s352WbW3T1zzsyj0Y3H140A7K6tGzJb1l7YvF1z989Hq6vrbT9vA4A0b2+vXN7tNpvzM287d3l39/v6+noH8Gz8/ffb/vPz6+rqas+12+09x21+fn5+vv56u92+B9R9b209d+z/ALl19+404C95v+9v/v39pP+B7+6+/v1wOHz7+vr6779vAGwW8wN2dF1fn//83Lq+vg747g7g7u7XFwB+Pj292n01Nxe/vr4+P1vfANR//drt7u4mAPQOAKz3+4H+2L8C+P776+q4gP0LAKb3+3t+AIAvAH/4B8AA/n5/AKj7c8DvD3b/AfwP+PtfgP8LwO8/APwG+P/x4/+AfgcA777/gLrfAQA79tY0YAAAABJRU5ErkJggg=="
-    icon_cart = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAuJJREFUeJztW71v20YQvvOdXUqT51g8R9tYIdrVwT1K9GvQf4j2r9An6B8gSRAkTbpwS9Cgnf7BghK+dE7xIeO6ncfu2r7t+7KqC61Iks6R+P3O7s7ujruH7z//6w8A3Zqbf25tffr+/fuvv15qV30J8v2d9f30/vXbS27P3JvFp58fjv60CgC9O78GgA7Z//X//g7Qd74fA/Y9+L07v5jH748A3p//r93P787e3N6+vn70q66uTvtP3d3fv7//+vvPfwFzZ3ZuvTvfXb29fW+v/A5Q9P00v8n/AIChwO3t/f2ffy8C/m77B3p3+wP8310/AHg//wMAnv4M2N0BwL4vAKj7X8Dv7//u7//A7r8C2N0A6O8D6O4AANz//v7t7wEAL6B7D6C7fwDwvQCAvf37d00fAOB//w8Am/3a/wIA7O7oBwCwv68AALu7uvD78w/Ab3d9XwL833t/P4C9v/4C8Puvv/8CwPfvD+C7r/8D+O7rwG939z8AAMB3AHz/fgAAv48LAPj+fQC35+fvBwDz/38AQPAvAPDvDwAAv++vC/75/a9/f7+/v/n+/j6P30j9HwBeLgD05/ffu/O7i77+/r99AOD//8fX19fHx+vr59fHAPz1j4+ffwM8v778P59++vj4+Pr+/v8bYADvX19/f5/r7/8D8Pj4uD//7+/v3x/rL8Dv//8H8D5gD5gD0AOmA+jB6wHz/vLAAuY1ALb6C4ALmPufv7h/A3ZfANjrfwDsLwAc/wBwvP8DwN5vAOgP0A2D35//r4cE2N3Z/wM8fN8eAFbvXzM8v22+f9pLvv55Z/wFkPz+lK1v3gAAAABJRU5ErkJggg=="
+    icon_new = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAsNJREFUeJztW81qG0UQvjOz2lW8S3O2C22iN0qCHjrwqge/QD9DP0A/Rj9AP8Q1OimQhBBLwSRElM6m2W3t3p29vTNDt0oN3s352WbW3T1zzsyj0Y3H140A7K6tGzJb1l7YvF1z989Hq6vrbT9vA4A0b2+vXN7tNpvzM28d3t3X12t3d7e7939/d/r6/v/d39pP+B7+6+/v1wOHz7+vr6779vAGwW8wN2dF1fn//83Lq+vg747g7g7u7XFwB+Pj292n01Nxe/vr4+P1vfANR//drt7u4mAPQOAKz3+4H+2L8C+P776+q4gP0LAKb3+3t+AIAvAH/4B8AA/n5/AKj7c8DvD3b/AfwP+PtfgP8LwO8/APwG+P/x4/+AfgcA777/gLrfAQA79tY0YAAAABJRU5ErkJggg=="
+    icon_cart = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAuJJREFUeJztW71v20YQvvOdXUqT51g8R9tYIdrVwT1K9GvQf4j2r9An6B8gSRAkTbpwS9Cgnf7BghK+dE7xIeO6ncfu2r7t+7KqC61Iks6R+P3O7s7ujruH7z//6w8A3Zqbf25tffr+/fuvv15qV30J8v2d9f30/vXbS27P3JvFp58fjv60CgC9O78GgA7Z//X//g7Qd74fA/Y9+L07v5jH748A3p//r93P787e3N6+vn70q66uTvtP3d3fv7//+vvPfwFzZ3ZuvTvfXb29fW+v/A5Q9P00v8n/AIChwO3t/f2ffy8C/m77B3p3+wP8310/AHg//wMAnv4M2N0BwL4vAKj7X8Dv7//u7//A7r8C2N0A6O8D6O4AANz//v7t7wEAL6B7D6C7fwDwnQCAvf37d00fAOB//w8Am/3a/wIA7O7oBwCwv68AALu7uvD78w/Ab3d9XwL833t/P4C9v/4C8Puvv/8CwPfvD+C7r/8D+O7rwG939z8AAMB3AHz/fgAAv48LAPj+fQC35+fvBwDz/38AQPAvAPDvDwAAv++vC/75/a9/f7+/v/n+/j6P30j9HwBeLgD05/ffu/O7i77+/r99AOD//8fX19fHx+vr59fHAPz1j4+ffwM8v778P59++vj4+Pr+/v8bYADvX19/f5/r7/8D8Pj4uD//7+/v3x/rL8Dv//8H8D5gD5gD0AOmA+jB6wHz/vLAAuY1ALb6C4ALmPufv7h/A3ZfANjrfwDsLwAc/wBwvP8DwN5vAOgP0A2D35//r4cE2N3Z/wM8fN8eAFbvXzM8v22+f9pLvv55Z/wFkPz+lK1v3gAAAABJRU5ErkJggg=="
     icon_list = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAsNJREFUeJztW81qG0UQvjOz2lW8S3O2C22iN0qCHjrwqge/QD9DP0A/Rj9AP8Q1OimQhBBLwSRElM6m2W3t3p29vTNDt0oN3s352WbW3T1zzsyj0Y3H140A7K6tGzJb1l7YvF1z989Hq6vrbT9vA4A0b2+vXN7tNpvzM28d3t3X12t3d7e7939/d/r6/v/d39pP+B7+6+/v1wOHz7+vr6779vAGwW8wN2dF1fn//83Lq+vg747g7g7u7XFwB+Pj292n01Nxe/vr4+P1vfANR//drt7u4mAPQOAKz3+4H+2L8C+P776+q4gP0LAKb3+3t+AIAvAH/4B8AA/n5/AKj7c8DvD3b/AfwP+PtfgP8LwO8/APwG+P/x4/+AfgcA777/gLrfAQA79tY0YAAAABJRU5ErkJggg=="
     icon_sync = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAsNJREFUeJztW81qG0UQvjOz2lW8S3O2C22iN0qCHjrwqge/QD9DP0A/Rj9AP8Q1OimQhBBLwSRElM6m2W3t3p29vTNDt0oN3s352WbW3T1zzsyj0Y3H140A7K6tGzJb1l7YvF1z989Hq6vrbT9vA4A0b2+vXN7tNpvzM28d3t3X12t3d7e7939/d/r6/v/d39pP+B7+6+/v1wOHz7+vr6779vAGwW8wN2dF1fn//83Lq+vg747g7g7u7XFwB+Pj292n01Nxe/vr4+P1vfANR//drt7u4mAPQOAKz3+4H+2L8C+P776+q4gP0LAKb3+3t+AIAvAH/4B8AA/n5/AKj7c8DvD3b/AfwP+PtfgP8LwO8/APwG+P/x4/+AfgcA777/gLrfAQA79tY0YAAAABJRU5ErkJggg=="
 
-    # 모바일 최적화 및 커스텀 하단 탭 스타일 주입
+    # 모바일 최적화 및 커스텀 하단 탭 스타일 주입 (f-string 중괄호 이중 {{ }} 처리 적용)
     st.markdown(f"""
         <style>
         .block-container {{
@@ -69,18 +69,18 @@ else:
             border-radius: 8px;
             text-align: center;
             margin-bottom: 10px;
-        }
+        }}
         .brand-header h1 {{
             margin: 0;
             font-size: 19px;
             font-weight: 700;
             letter-spacing: 1px;
-        }
+        }}
         .brand-header p {{
             margin: 2px 0 0 0;
             font-size: 11px;
             color: #aaaaaa;
-        }
+        }}
         .client-highlight-box {{
             background-color: #111111;
             color: #ffffff;
@@ -92,7 +92,7 @@ else:
             letter-spacing: 0.5px;
             margin-bottom: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
+        }}
         div.stButton > button {{
             border-radius: 8px;
             font-weight: 700;
@@ -296,7 +296,7 @@ else:
                 </div>
             """, unsafe_allow_html=True)
             
-            if st.button("⬅️ 모델 다시 고르기", use_container_width=True):
+            if st.button("⬅️️ 모델 다시 고르기", use_container_width=True):
                 st.session_state.step = "select_model"
                 st.rerun()
 
@@ -321,7 +321,7 @@ else:
                 st.warning(f"⚠️ 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
                 if st.session_state.pending_reservation_items:
-                    st.warning("⚠️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
+                    st.warning("⚠️️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
                     
                     with st.form("reservation_confirm_form"):
                         st.write("재고가 없는 제품입니다. 예약주문으로 하시겠습니까?")
@@ -724,37 +724,6 @@ else:
     # -------------------------------------------------------------------------
     cart_badge_str = f" ({cart_count})" if cart_count > 0 else ""
     
-    # 각 버튼 클릭 시 쿼리 파라미터나 콜백 대신 Streamlit 버튼 + 프레임워크 렌더링 활용을 위한 폼 형태 구축
-    cols_tab = st.columns(4)
-    with cols_tab[0]:
-        pass
-
-    st.markdown(f"""
-        <div class="fixed-bottom-dock">
-            <button class="tab-btn-custom" onclick="window.location.reload();">
-                <img src="{icon_new}" />새주문
-            </button>
-            <button class="tab-btn-custom" onclick="window.location.reload();">
-                <img src="{icon_cart}" />장바구니{cart_badge_str}
-            </button>
-            <button class="tab-btn-custom" onclick="window.location.reload();">
-                <img src="{icon_list}" />주문서
-            </button>
-            <button class="tab-btn-custom" onclick="window.location.reload();">
-                <img src="{icon_sync}" />새로고침
-            </button>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # Streamlit 네이티브 동작을 위한 숨김 트리거 버튼들 (실제 탭 클릭 시 상태 전환 연동)
-    st.markdown("""
-        <script>
-        const buttons = document.querySelectorAll('.fixed-bottom-dock button');
-        // Streamlit 내부 버튼 클릭 트리거 매핑
-        </script>
-    """, unsafe_allow_html=True)
-
-    # 파이썬 네이티브 버튼으로 완벽하게 동작하는 하단 독바 영역 대체
     st.markdown("---")
     d1, d2, d3, d4 = st.columns(4)
     with d1:
