@@ -46,12 +46,12 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 및 4등분 정사각형 하단 버튼 CSS
+    # 모바일 최적화 및 아이폰 스타일 하단 고정 탭바 CSS
     st.markdown("""
         <style>
         .block-container {
             padding-top: 2.8rem !important;
-            padding-bottom: 5rem !important;
+            padding-bottom: 6.5rem !important; /* 하단 탭바를 위해 충분한 여백 확보 */
             overflow-x: hidden !important; 
         }
         .main {
@@ -95,33 +95,80 @@ else:
             font-size: 15px;
             transition: all 0.2s ease-in-out;
         }
-        div.stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
         
-        /* 🌟 하단 네비게이션 무조건 4등분 & 정사각형 배열 🌟 */
-        div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) > div[data-testid="stHorizontalBlock"] {
-            display: flex !important;
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            gap: 6px !important; /* 버튼 사이 여백 */
-            width: 100% !important;
-        }
-        div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) div[data-testid="column"] {
-            width: 25% !important; /* 정확히 4등분 */
-            min-width: 0 !important; /* 모바일 강제 100% 확대 무력화 */
-            flex: 1 1 0% !important;
-        }
-        div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) .stButton > button {
-            height: 65px !important; /* 버튼 세로 길이를 늘려 정사각형 형태로 만듦 */
-            width: 100% !important;
-            padding: 0 !important;
-            font-size: 1.8rem !important; /* 이모지 크기 확대 */
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            border-radius: 12px !important;
+        /* =========================================================
+           🌟 완벽한 iOS 네이티브 앱 스타일 하단 고정 탭바 (가로 정렬 강제) 🌟 
+           ========================================================= */
+        @media (max-width: 9999px) {
+            /* 하단 고정 바 배경 설계 */
+            div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                background: rgba(255, 255, 255, 0.96); /* 반투명 아이폰 스타일 */
+                backdrop-filter: blur(10px);
+                z-index: 999999;
+                border-top: 1px solid #e5e5e5;
+                padding-bottom: env(safe-area-inset-bottom, 15px); /* 아이폰 하단 홈바 여백 대응 */
+            }
+            /* 어떤 폰에서도 무조건 1열 가로 정렬 강제 */
+            div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) > div[data-testid="stHorizontalBlock"] {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                gap: 0 !important;
+                margin: 0 !important;
+                padding: 4px 0 !important;
+            }
+            div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) div[data-testid="column"] {
+                width: 25% !important;
+                flex: 1 1 25% !important;
+                min-width: 0 !important;
+                padding: 0 !important;
+            }
+            /* 버튼을 아이폰 앱 아이콘처럼 투명화 후 이미지 삽입 영역 확보 */
+            div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) .stButton > button {
+                border: none !important;
+                background-color: transparent !important;
+                height: 52px !important;
+                padding: 30px 0 0 0 !important; /* 위쪽을 비워서 아이콘 공간 확보 */
+                width: 100% !important;
+                border-radius: 0 !important;
+                background-repeat: no-repeat !important;
+                background-position: center top 4px !important;
+                background-size: 24px !important; /* 아이콘 크기 고정 */
+                box-shadow: none !important;
+            }
+            div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) .stButton > button p {
+                font-size: 11px !important;
+                font-weight: 600 !important;
+                color: #8e8e93 !important; /* iOS 기본 미선택 탭 색상 */
+                margin: 0 !important;
+            }
+            /* 버튼 터치 시 액션 */
+            div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) .stButton > button:active,
+            div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) .stButton > button:hover {
+                background-color: rgba(0,0,0,0.03) !important;
+            }
+            div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) .stButton > button:active p,
+            div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) .stButton > button:hover p {
+                color: #111111 !important; /* 터치 시 글자 진하게 */
+            }
+            
+            /* 📂 Github의 Assets 이미지 원격 주소 직접 입혀주기 */
+            div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) div[data-testid="column"]:nth-child(1) .stButton > button {
+                background-image: url('https://raw.githubusercontent.com/honey23388-web/republica-order-app/main/assets/new.png') !important;
+            }
+            div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) div[data-testid="column"]:nth-child(2) .stButton > button {
+                background-image: url('https://raw.githubusercontent.com/honey23388-web/republica-order-app/main/assets/cart.png') !important;
+            }
+            div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) div[data-testid="column"]:nth-child(3) .stButton > button {
+                background-image: url('https://raw.githubusercontent.com/honey23388-web/republica-order-app/main/assets/list.png') !important;
+            }
+            div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) div[data-testid="column"]:nth-child(4) .stButton > button {
+                background-image: url('https://raw.githubusercontent.com/honey23388-web/republica-order-app/main/assets/sync.png') !important;
+            }
         }
         </style>
     """, unsafe_allow_html=True)
@@ -708,11 +755,10 @@ else:
                 st.metric(label="총 판매수량", value=f"{total_qty:,}개")
 
     # -------------------------------------------------------------------------
-    # 하단 4등분 정사각형 이모지 네비게이션 버튼 (완벽 적용)
+    # iOS 네이티브 앱 스타일 하단 네비게이션 적용부
+    # 이모지는 삭제하고 CSS background-image가 아이콘을 대신 그려줍니다.
     # -------------------------------------------------------------------------
-    cart_badge_str = f" ({cart_count})" if cart_count > 0 else ""
-    
-    st.markdown("---")
+    cart_badge_str = f"({cart_count})" if cart_count > 0 else ""
     
     with st.container():
         # CSS 타겟팅용 숨김 앵커
@@ -720,22 +766,22 @@ else:
         d1, d2, d3, d4 = st.columns(4)
         
         with d1:
-            if st.button("📝", use_container_width=True):
+            if st.button("새주문", use_container_width=True):
                 st.session_state.active_tab = "새주문"
                 st.session_state.step = "input_client"
                 st.rerun()
         with d2:
-            cart_label = f"🛒{cart_badge_str}"
+            cart_label = f"장바구니 {cart_badge_str}".strip()
             if st.button(cart_label, use_container_width=True):
                 st.session_state.active_tab = "장바구니"
                 st.session_state.step = "goto_cart_tab"
                 st.rerun()
         with d3:
-            if st.button("📋", use_container_width=True):
+            if st.button("주문서", use_container_width=True):
                 st.session_state.active_tab = "주문서"
                 st.rerun()
         with d4:
-            if st.button("🔄", use_container_width=True):
+            if st.button("새로고침", use_container_width=True):
                 st.cache_data.clear()
                 st.success("데이터 갱신 완료!")
                 st.rerun()
