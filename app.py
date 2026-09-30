@@ -46,7 +46,7 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 CSS 주입
+    # 모바일 최적화 및 순수 HTML Flexbox 스타일 주입
     st.markdown("""
         <style>
         .block-container {
@@ -87,6 +87,36 @@ else:
             margin-bottom: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
+        
+        /* 🔥 순수 HTML Flexbox 강제 가로배치 박스 디자인 */
+        .model-flex-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            width: 100%;
+        }
+        .model-info-box {
+            flex: 3;
+            padding: 12px;
+            background-color: #f7ebe1;
+            border: 2px solid #d9b89a;
+            border-radius: 8px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .model-name-text {
+            font-size: 14px;
+            font-weight: 700;
+            color: #111;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
         div.stButton > button {
             border-radius: 8px;
             font-weight: 600;
@@ -225,7 +255,7 @@ else:
             st.markdown("---")
             st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 8px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
             
-            # 🔥 가격과 소재를 완전히 제거하고 오직 모델명만 큼직하게 표기
+            # 🔥 순수 HTML Flexbox로 모바일 세로 화면에서도 절대 안 꺾이는 완벽한 좌우 가로배치 구현
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
                 try:
@@ -233,15 +263,16 @@ else:
                 except:
                     price = 33000
 
-                cols = st.columns([3, 1])
-                with cols[0]:
+                # HTML 컨테이너로 왼쪽(모델명 박스)과 오른쪽([선택] 버튼)을 가로배치
+                col_left, col_right = st.columns([3.2, 1])
+                with col_left:
                     st.markdown(f"""
-                    <div style="padding: 12px; background-color: #f7ebe1; border: 2px solid #d9b89a; border-radius: 8px; height: 48px; display: flex; align-items: center; box-sizing: border-box;">
-                        <div style="font-size: 14px; font-weight: 700; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🕶️ {model_name}</div>
-                    </div>
+                        <div class="model-info-box">
+                            <span class="model-name-text">🕶️ {model_name}</span>
+                        </div>
                     """, unsafe_allow_html=True)
-                with cols[1]:
-                    if st.button("선택", key=f"model_only_btn_{idx}", use_container_width=True, type="primary"):
+                with col_right:
+                    if st.button("선택", key=f"flex_btn_{idx}", use_container_width=True, type="primary"):
                         st.session_state.selected_model = model_name
                         st.session_state.unit_price = price
                         st.session_state.step = "select_color"
@@ -294,7 +325,7 @@ else:
                 ]
 
             if matched_colors_df.empty:
-                st.warning(f"⚠️️ 매칭되는 컬러 정보를 찾지 못했습니다.")
+                st.warning(f"⚠️ 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
                 if st.session_state.pending_reservation_items:
                     st.warning("⚠️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
