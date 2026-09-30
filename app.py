@@ -46,13 +46,13 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 및 하단 버튼 가로 정렬(스크롤바 제거) CSS
+    # 모바일 최적화 및 4등분 정사각형 하단 버튼 CSS
     st.markdown("""
         <style>
         .block-container {
             padding-top: 2.8rem !important;
-            padding-bottom: 3rem !important;
-            overflow-x: hidden !important; /* 전체 화면 가로 스크롤 원천 차단 */
+            padding-bottom: 5rem !important;
+            overflow-x: hidden !important; 
         }
         .main {
             background-color: #fcfcfc;
@@ -100,22 +100,28 @@ else:
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         
-        /* 🌟 하단 네비게이션 가로 정렬 (스크롤바 완벽 해결) 🌟 */
-        div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) div[data-testid="stHorizontalBlock"] {
+        /* 🌟 하단 네비게이션 무조건 4등분 & 정사각형 배열 🌟 */
+        div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) > div[data-testid="stHorizontalBlock"] {
             display: flex !important;
             flex-direction: row !important;
             flex-wrap: nowrap !important;
-            gap: 4px !important; /* 여백을 최소화하여 넘침 방지 */
+            gap: 6px !important; /* 버튼 사이 여백 */
             width: 100% !important;
         }
         div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) div[data-testid="column"] {
-            flex: 1 1 0px !important; /* 4등분 균등 분배 */
-            width: auto !important;
-            min-width: 0 !important; /* 창이 좁아져도 버튼이 찌그러지며 줄어들게 허용 */
+            width: 25% !important; /* 정확히 4등분 */
+            min-width: 0 !important; /* 모바일 강제 100% 확대 무력화 */
+            flex: 1 1 0% !important;
         }
         div[data-testid="stVerticalBlock"]:has(#bottom-nav-anchor) .stButton > button {
-            padding: 0 !important; /* 버튼 내부 좌우 여백을 없애서 좁은 폰에서도 한 줄로 유지 */
-            font-size: 1.2rem !important; 
+            height: 65px !important; /* 버튼 세로 길이를 늘려 정사각형 형태로 만듦 */
+            width: 100% !important;
+            padding: 0 !important;
+            font-size: 1.8rem !important; /* 이모지 크기 확대 */
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 12px !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -702,15 +708,17 @@ else:
                 st.metric(label="총 판매수량", value=f"{total_qty:,}개")
 
     # -------------------------------------------------------------------------
-    # 하단 이모지 네비게이션 버튼 (화면 축소 시 세로 정렬 및 스크롤바 방지 적용 완료)
+    # 하단 4등분 정사각형 이모지 네비게이션 버튼 (완벽 적용)
     # -------------------------------------------------------------------------
     cart_badge_str = f" ({cart_count})" if cart_count > 0 else ""
     
     st.markdown("---")
     
     with st.container():
-        st.markdown('<div id="bottom-nav-anchor"></div>', unsafe_allow_html=True)
+        # CSS 타겟팅용 숨김 앵커
+        st.markdown('<div id="bottom-nav-anchor" style="display:none;"></div>', unsafe_allow_html=True)
         d1, d2, d3, d4 = st.columns(4)
+        
         with d1:
             if st.button("📝", use_container_width=True):
                 st.session_state.active_tab = "새주문"
