@@ -34,7 +34,7 @@ def load_data():
     except Exception as e:
         return None, None, None
 
-# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수
+# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (로그인 성공 판정 수정)
 def send_order_to_ecount(cart_items, client_name, memo, df_colors):
     try:
         # 1단계: ZONE 조회
@@ -51,7 +51,7 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
             
         zone = zone_info.get("ZONE", "CC")
         
-        # 2단계: 로그인 (세션 발급 - 올바른 도메인 및 ZONE 바디 포함)
+        # 2단계: 로그인 (세션 발급)
         login_url = f"https://sboapi{zone}.ecount.com/OAPI/V2/OAPILogin"
         login_res = requests.post(
             login_url,
@@ -65,13 +65,13 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
             timeout=5
         )
         login_data = login_res.json()
-        login_info = login_data.get("Data")
+        login_info = login_data.get("Data", {})
         
-        if not login_info or not login_info.get("SESSION_ID"):
+        # 세션 ID 추출 (대소문자 및 딕셔너리 구조 유연하게 대응)
+        session_id = login_info.get("SESSION_ID") or login_info.get("Session_Id")
+        if not session_id:
             st.error(f"이카운트 로그인 실패: {login_data}")
             return False
-            
-        session_id = login_info.get("SESSION_ID")
             
         # 3단계: 판매주문서 입력 데이터 구성
         today_str = datetime.datetime.now().strftime("%Y%m%d")
@@ -432,7 +432,7 @@ else:
                 st.warning(f"⚠️ 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
                 if st.session_state.pending_reservation_items:
-                    st.warning("⚠️️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
+                    st.warning("⚠️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
                     with st.form("reservation_confirm_form"):
                         st.write("재고가 없는 제품입니다. 예약주문으로 하시겠습니까?")
                         for p_item in st.session_state.pending_reservation_items:
