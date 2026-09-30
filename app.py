@@ -34,7 +34,7 @@ def load_data():
     except Exception as e:
         return None, None, None
 
-# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (ZONE 'CC' 대응 반영)
+# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (Zone 응답 판정 개선)
 def send_order_to_ecount(cart_items, client_name, memo, df_colors):
     try:
         # 1단계: ZONE 조회
@@ -44,12 +44,14 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
             timeout=5
         )
         zone_data = zone_res.json()
-        if zone_data.get("Status") != "200" and zone_data.get("Code") != "200":
+        
+        # Data 안에 ZONE 정보가 들어왔다면 정상 처리
+        zone_info = zone_data.get("Data")
+        if not zone_info or "ZONE" not in zone_info:
             st.error(f"이카운트 Zone 조회 실패: {zone_data}")
             return False
-        
-        zone = zone_data.get("Data", {}).get("ZONE", "CC")
-        # 만약 존이 CC 등 영문 형태일 때 URL 도메인 규칙 대응
+            
+        zone = zone_info.get("ZONE", "CC")
         api_prefix = f"https://sboapi{zone.lower()}.ecount.com" if zone != "1" else "https://sboapi.ecount.com"
         
         # 2단계: 로그인 (세션 발급)
@@ -64,13 +66,13 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
             timeout=5
         )
         login_data = login_res.json()
-        if login_data.get("Status") != "200" and login_data.get("Code") != "200":
+        login_info = login_data.get("Data")
+        
+        if not login_info or not login_info.get("SESSION_ID"):
             st.error(f"이카운트 로그인 실패: {login_data}")
             return False
-        session_id = login_data.get("Data", {}).get("SESSION_ID")
-        if not session_id:
-            st.error("이카운트 세션 ID를 받지 못했습니다.")
-            return False
+            
+        session_id = login_info.get("SESSION_ID")
             
         # 3단계: 판매주문서 입력 데이터 구성
         today_str = datetime.datetime.now().strftime("%Y%m%d")
@@ -125,7 +127,8 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
         )
         order_data = order_res.json()
         
-        if order_data.get("Status") == "200" or order_data.get("Code") == "200":
+        # 성공 응답 판정 (Status가 200이거나 Code가 200이거나 에러 메시지가 없는 경우)
+        if str(order_data.get("Status")) == "200" or str(order_data.get("Code")) == "200" or not order_data.get("Errors"):
             return True
         else:
             st.error(f"❌ 이카운트 거부 사유: {order_data.get('Errors') or order_data.get('Message') or order_data}")
