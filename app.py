@@ -34,7 +34,7 @@ def load_data():
     except Exception as e:
         return None, None, None
 
-# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (Zone 응답 판정 개선)
+# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (ZONE 로그인 규격 수정)
 def send_order_to_ecount(cart_items, client_name, memo, df_colors):
     try:
         # 1단계: ZONE 조회
@@ -44,23 +44,21 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
             timeout=5
         )
         zone_data = zone_res.json()
-        
-        # Data 안에 ZONE 정보가 들어왔다면 정상 처리
         zone_info = zone_data.get("Data")
         if not zone_info or "ZONE" not in zone_info:
             st.error(f"이카운트 Zone 조회 실패: {zone_data}")
             return False
             
         zone = zone_info.get("ZONE", "CC")
-        api_prefix = f"https://sboapi{zone.lower()}.ecount.com" if zone != "1" else "https://sboapi.ecount.com"
         
-        # 2단계: 로그인 (세션 발급)
+        # 2단계: 로그인 (세션 발급 - ZONE을 JSON 바디에 포함)
         login_res = requests.post(
-            f"{api_prefix}/OAPI/V2/OAPILogin",
+            "https://sboapi.ecount.com/OAPI/V2/OAPILogin",
             json={
                 "COM_CODE": ECOUNT_COM_CODE,
                 "USER_ID": ECOUNT_USER_ID,
                 "API_CERT_KEY": ECOUNT_API_KEY,
+                "ZONE": zone,
                 "LAN_TYPE": "ko-KR"
             },
             timeout=5
@@ -121,13 +119,12 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
         }
         
         order_res = requests.post(
-            f"{api_prefix}/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}",
+            f"https://sboapi.ecount.com/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}",
             json=order_payload,
             timeout=10
         )
         order_data = order_res.json()
         
-        # 성공 응답 판정 (Status가 200이거나 Code가 200이거나 에러 메시지가 없는 경우)
         if str(order_data.get("Status")) == "200" or str(order_data.get("Code")) == "200" or not order_data.get("Errors"):
             return True
         else:
@@ -390,7 +387,7 @@ else:
                 if "티타늄" in mat_lower: icon_prefix = "🔩"
                 elif "아세테이트" in mat_lower: icon_prefix = "🏷️"
                 elif "콤비" in mat_lower: icon_prefix = "🔗"
-                else: icon_prefix = "🕶️"
+                else: icon_prefix = "🕶️️"
 
                 btn_label = f"{icon_prefix} {model_name}"
                 if st.button(btn_label, key=f"mat_icon_btn_{idx}", use_container_width=True):
@@ -409,7 +406,7 @@ else:
                 </div>
             """, unsafe_allow_html=True)
             
-            if st.button("⬅️ 모델 다시 고르기", use_container_width=True):
+            if st.button("⬅️️ 모델 다시 고르기", use_container_width=True):
                 st.session_state.step = "select_model"
                 st.rerun()
 
