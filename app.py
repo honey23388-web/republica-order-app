@@ -31,6 +31,7 @@ if df_models is None or df_models.empty:
     st.error("⚠️ 구글 시트 데이터를 불러오는 데 실패했습니다.")
     st.info("💡 해결 방법:\n1. 구글 시트 링크 및 공유 설정을 확인해 주세요.\n2. 탭 이름이 **model**, **color**, **client**인지 확인해 주세요.")
 else:
+    # 세션 상태 초기화
     if 'cart' not in st.session_state:
         st.session_state.cart = []
     if 'drafts' not in st.session_state:
@@ -45,14 +46,15 @@ else:
         st.session_state.cart_memo = ""
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
+    if 'sub_menu_state' not in st.session_state:
+        st.session_state.sub_menu_state = "선택 안함 (메인 화면 유지)"
 
-    # 모바일 최적화 및 강제 가로 배열 CSS (스크롤바 완벽 차단)
+    # 안전한 모바일 기본 CSS (오류 유발 강제 정렬 코드 모두 제거)
     st.markdown("""
         <style>
         .block-container {
             padding-top: 2.8rem !important;
-            padding-bottom: 5rem !important;
-            overflow-x: hidden !important; 
+            padding-bottom: 3rem !important;
         }
         .main {
             background-color: #fcfcfc;
@@ -88,32 +90,14 @@ else:
             margin-bottom: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
-        
-        /* 🌟 핵심: 스마트폰에서 버튼이 절대 세로로 꺾이지 않게 방어 🌟 */
-        div[data-testid="stHorizontalBlock"] {
-            display: flex !important;
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            gap: 5px !important;
-            width: 100% !important;
-        }
-        div[data-testid="column"] {
-            flex: 1 1 0px !important; /* 무조건 1:1:1:1 비율 유지 */
-            min-width: 0 !important;  /* 스크롤바 생성 방지 */
-            width: auto !important;
-        }
-        
-        /* 버튼 디자인 최적화 */
-        .stButton > button {
-            border-radius: 12px !important;
-            font-weight: 800 !important;
-            height: 55px !important;
-            font-size: 16px !important;
-            padding: 0 !important;
-            width: 100% !important;
+        div.stButton > button {
+            border-radius: 8px;
+            font-weight: 700;
+            height: 52px;
+            font-size: 16px;
             transition: all 0.2s ease-in-out;
         }
-        .stButton > button:hover {
+        div.stButton > button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
@@ -123,16 +107,29 @@ else:
     cart_count = sum(item['수량'] for item in st.session_state.cart)
 
     # -------------------------------------------------------------------------
-    # 왼쪽 상단 사이드바
+    # 왼쪽 상단 사이드바 (메인 메뉴 통합)
     # -------------------------------------------------------------------------
     st.sidebar.markdown("### 👓 REPUBLICA B2B")
-    st.sidebar.markdown("---")
     
-    if st.sidebar.button("🔄 최신 데이터 새로고침", use_container_width=True):
-        st.cache_data.clear()
-        st.success("캐시가 초기화되었습니다!")
+    st.sidebar.markdown("#### 📌 메인 메뉴")
+    
+    if st.sidebar.button("📝 새주문 작성", use_container_width=True):
+        st.session_state.active_tab = "새주문"
+        st.session_state.step = "input_client"
+        st.session_state.sub_menu_state = "선택 안함 (메인 화면 유지)" # 라디오 버튼 충돌 초기화
         st.rerun()
         
+    if st.sidebar.button("📋 주문서 내역", use_container_width=True):
+        st.session_state.active_tab = "주문서"
+        st.session_state.sub_menu_state = "선택 안함 (메인 화면 유지)" # 라디오 버튼 충돌 초기화
+        st.rerun()
+        
+    if st.sidebar.button("🔄 데이터 새로고침", use_container_width=True):
+        st.cache_data.clear()
+        st.success("최신 데이터 갱신 완료!")
+        st.rerun()
+
+    st.sidebar.markdown("---")
     st.sidebar.markdown("#### 📂 추가 조회 메뉴")
     sub_menu = st.sidebar.radio(
         "조회 메뉴 선택", 
@@ -142,6 +139,7 @@ else:
             "📊 매장별 히스토리 보기", 
             "📈 실적현황"
         ],
+        key="sub_menu_state",
         label_visibility="collapsed"
     )
     
@@ -259,13 +257,6 @@ else:
                     st.session_state.selected_model = model_name
                     st.session_state.unit_price = price
                     st.session_state.step = "select_color"
-                    st.rerun()
-
-            if len(st.session_state.cart) > 0:
-                st.markdown("---")
-                if st.button("🛒 장바구니 확인 / 주문 완료", use_container_width=True):
-                    st.session_state.active_tab = "장바구니"
-                    st.session_state.step = "goto_cart_tab"
                     st.rerun()
 
         elif st.session_state.step == "select_color":
@@ -417,16 +408,9 @@ else:
                             
                 if len(st.session_state.cart) > 0:
                     st.markdown("---")
-                    b_col1, b_col2 = st.columns(2)
-                    with b_col1:
-                        if st.button("➕ 다른 모델 담기", use_container_width=True):
-                            st.session_state.step = "select_model"
-                            st.rerun()
-                    with b_col2:
-                        if st.button("🛒 장바구니 확인", type="primary", use_container_width=True):
-                            st.session_state.active_tab = "장바구니"
-                            st.session_state.step = "goto_cart_tab"
-                            st.rerun()
+                    if st.button("➕ 다른 모델 추가로 담기", use_container_width=True):
+                        st.session_state.step = "select_model"
+                        st.rerun()
 
         if st.session_state.step == "goto_cart_tab":
             st.title("🛒 장바구니 현황")
@@ -702,29 +686,15 @@ else:
                 st.metric(label="총 판매수량", value=f"{total_qty:,}개")
 
     # -------------------------------------------------------------------------
-    # 스크롤바 방지 및 강제 4등분 가로 배열 하단 네비게이션
+    # 하단 장바구니 전용 버튼 (가장 하단에 항상 표시)
     # -------------------------------------------------------------------------
-    cart_badge_str = f"({cart_count})" if cart_count > 0 else ""
+    cart_badge_str = f" ({cart_count}개)" if cart_count > 0 else ""
     
+    st.markdown("<br>", unsafe_allow_html=True) # 위쪽 콘텐츠와의 여백
     st.markdown("---")
     
-    d1, d2, d3, d4 = st.columns(4)
-    with d1:
-        if st.button("📝 주문", use_container_width=True):
-            st.session_state.active_tab = "새주문"
-            st.session_state.step = "input_client"
-            st.rerun()
-    with d2:
-        if st.button(f"🛒 담기{cart_badge_str}", use_container_width=True):
-            st.session_state.active_tab = "장바구니"
-            st.session_state.step = "goto_cart_tab"
-            st.rerun()
-    with d3:
-        if st.button("📋 내역", use_container_width=True):
-            st.session_state.active_tab = "주문서"
-            st.rerun()
-    with d4:
-        if st.button("🔄 갱신", use_container_width=True):
-            st.cache_data.clear()
-            st.success("데이터 갱신 완료!")
-            st.rerun()
+    # 크고 눈에 띄게 장바구니 버튼 1개만 배치
+    if st.button(f"🛒 장바구니 확인하기{cart_badge_str}", type="primary", use_container_width=True):
+        st.session_state.active_tab = "장바구니"
+        st.session_state.step = "goto_cart_tab"
+        st.rerun()
