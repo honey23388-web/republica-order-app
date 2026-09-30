@@ -213,11 +213,11 @@ else:
             material_col = df_models.columns[1] if len(df_models.columns) > 1 else None
             price_col = df_models.columns[2] if len(df_models.columns) > 2 else None
 
-            all_model_names = df_models[model_col].astype(str).tolist()
+            all_model_names = df_models[model_col].fillna("").astype(str).tolist()
             search_query = st.selectbox("모델 검색", ["-- 모델명 검색 또는 선택 --"] + all_model_names, label_visibility="collapsed")
             
             if search_query != "-- 모델명 검색 또는 선택 --":
-                matched_row = df_models[df_models[model_col].astype(str) == search_query].iloc[0]
+                matched_row = df_models[df_models[model_col].fillna("").astype(str) == search_query].iloc[0]
                 model_name = str(matched_row[model_col])
                 try:
                     price = int(matched_row[price_col]) if price_col else 33000
@@ -236,6 +236,9 @@ else:
             
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
+                if model_name == "nan" or not model_name.strip():
+                    continue
+                    
                 material = str(row[material_col]).strip() if material_col else "기타"
                 try:
                     price = int(row[price_col]) if price_col else 33000
@@ -276,18 +279,19 @@ else:
             selected_model_name = st.session_state.selected_model
             unit_price = st.session_state.unit_price
             
-            clean_selected_model = selected_model_name.split('(')[0].strip().upper()
+            clean_selected_model = str(selected_model_name).split('(')[0].strip().upper()
             color_model_col = df_colors.columns[0]
             
+            # 💡 [핵심 에러 방어 코드]: 빈칸(NaN), 숫자 등의 데이터를 강제로 안전한 문자열로 변환
+            safe_color_series = df_colors[color_model_col].fillna("").astype(str)
+            
             matched_colors_df = df_colors[
-                df_colors[color_model_col].astype(str)
-                .apply(lambda x: x.split('(')[0].strip().upper() == clean_selected_model)
+                safe_color_series.apply(lambda x: str(x).split('(')[0].strip().upper() == clean_selected_model)
             ]
 
             if matched_colors_df.empty:
                 matched_colors_df = df_colors[
-                    df_colors[color_model_col].astype(str)
-                    .apply(lambda x: clean_selected_model in x.upper() or x.upper() in clean_selected_model)
+                    safe_color_series.apply(lambda x: clean_selected_model in str(x).upper() or str(x).upper() in clean_selected_model)
                 ]
 
             if matched_colors_df.empty:
@@ -693,7 +697,6 @@ else:
     st.markdown("<br>", unsafe_allow_html=True) 
     st.markdown("---")
     
-    # type="primary"를 제거하여 헷갈리지 않는 기본 회색 톤 버튼으로 적용
     if st.button(f"🛒 장바구니 확인하기{cart_badge_str}", use_container_width=True):
         st.session_state.active_tab = "장바구니"
         st.session_state.step = "goto_cart_tab"
