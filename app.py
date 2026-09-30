@@ -202,7 +202,6 @@ else:
             st.markdown("---")
             
             model_col = df_models.columns[0]
-            material_col = df_models.columns[1] if len(df_models.columns) > 1 else None
             price_col = df_models.columns[2] if len(df_models.columns) > 2 else None
 
             all_model_names = df_models[model_col].astype(str).tolist()
@@ -211,13 +210,12 @@ else:
             if search_query != "-- 모델명 검색 또는 선택 --":
                 matched_row = df_models[df_models[model_col].astype(str) == search_query].iloc[0]
                 model_name = str(matched_row[model_col])
-                material = str(matched_row[material_col]).strip() if material_col else "기타"
                 try:
                     price = int(matched_row[price_col]) if price_col else 33000
                 except:
                     price = 33000
                 
-                st.success(f"선택: **{model_name}** ({material} / ₩ {price:,})")
+                st.success(f"선택: **{model_name}** (₩ {price:,})")
                 if st.button("🚀 이 모델 컬러 고르러 가기", type="primary", use_container_width=True):
                     st.session_state.selected_model = model_name
                     st.session_state.unit_price = price
@@ -227,46 +225,23 @@ else:
             st.markdown("---")
             st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 8px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
             
-            # 모델명 표시, 가격 제외, 소재 단축("티탄", "아세"), 우측 선택 버튼 가로배치
+            # 🔥 가격과 소재를 완전히 제거하고 오직 모델명만 큼직하게 표기
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
-                material = str(row[material_col]).strip() if material_col else "기타"
                 try:
-                    price = int(row[price_col]) if price_col else 33000
+                    price = int(row.iloc[2]) if len(row.iloc) > 2 else 33000
                 except:
                     price = 33000
-
-                mat_lower = material.lower()
-                if "티타늄" in mat_lower: mat_short = "티탄"
-                elif "아세테이트" in mat_lower: mat_short = "아세"
-                elif "콤비" in mat_lower: mat_short = "콤비"
-                else: mat_short = material[:2]
-
-                if "티타늄" in mat_lower or "아세테이트" in mat_lower:
-                    box_bg = "#f7ebe1"
-                    border_c = "#d9b89a"
-                    badge_c = "#8c5830"
-                elif "콤비" in mat_lower:
-                    box_bg = "#daf2da"
-                    border_c = "#87cb87"
-                    badge_c = "#2d6a2d"
-                else:
-                    box_bg = "#eaeaea"
-                    border_c = "#cccccc"
-                    badge_c = "#555555"
 
                 cols = st.columns([3, 1])
                 with cols[0]:
                     st.markdown(f"""
-                    <div style="padding: 10px 12px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 8px; height: 48px; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
-                        <div style="font-size: 13px; font-weight: 700; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🕶️ {model_name}</div>
-                        <div style="display: flex; gap: 6px; align-items: center; margin-top: 2px; font-size: 11px;">
-                            <span style="background-color: {badge_c}; color: white; padding: 1px 5px; border-radius: 4px; font-weight: 600;">{mat_short}</span>
-                        </div>
+                    <div style="padding: 12px; background-color: #f7ebe1; border: 2px solid #d9b89a; border-radius: 8px; height: 48px; display: flex; align-items: center; box-sizing: border-box;">
+                        <div style="font-size: 14px; font-weight: 700; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🕶️ {model_name}</div>
                     </div>
                     """, unsafe_allow_html=True)
                 with cols[1]:
-                    if st.button("선택", key=f"final_model_btn_{idx}", use_container_width=True, type="primary"):
+                    if st.button("선택", key=f"model_only_btn_{idx}", use_container_width=True, type="primary"):
                         st.session_state.selected_model = model_name
                         st.session_state.unit_price = price
                         st.session_state.step = "select_color"
@@ -319,7 +294,7 @@ else:
                 ]
 
             if matched_colors_df.empty:
-                st.warning(f"⚠️ 매칭되는 컬러 정보를 찾지 못했습니다.")
+                st.warning(f"⚠️️ 매칭되는 컬러 정보를 찾지 못했습니다.")
             else:
                 if st.session_state.pending_reservation_items:
                     st.warning("⚠️ **재고가 없는 제품(예약주문 대상)이 포함되어 있습니다!**")
