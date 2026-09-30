@@ -77,7 +77,7 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 💡 [핵심] 모든 액션/상태 변화 시 스크롤을 무조건 최상단으로 강제 이동시키는 자바스크립트
+    # 💡 [핵심 강화] 컬러 선택 폼 등의 포커스로 인한 하단 덤핑을 막고 무조건 최상단 고정
     components.html(
         """
         <script>
@@ -88,12 +88,16 @@ else:
                     if (mainContainer) { mainContainer.scrollTo(0, 0); }
                     var stContainer = window.parent.document.querySelector('.stMain');
                     if (stContainer) { stContainer.scrollTo(0, 0); }
+                    // 포커스가 아래쪽 입력칸으로 쏠리는 것 강제 해제
+                    if (window.parent.document.activeElement) {
+                        window.parent.document.activeElement.blur();
+                    }
                 } catch(e) {}
             }
-            // 즉시 실행 및 약간의 딜레이 후 재실행으로 렌더링 후 스크롤 고정 보장
             forceScrollTop();
             setTimeout(forceScrollTop, 50);
             setTimeout(forceScrollTop, 150);
+            setTimeout(forceScrollTop, 300);
         </script>
         """,
         height=0
@@ -230,7 +234,7 @@ else:
             st.markdown("")
             if st.button("👉 주문서 작성 시작", type="primary", use_container_width=True):
                 if not selected_target or selected_target.strip() == "":
-                    st.warning("⚠️ 거래처 안경원 이름을 선택하거나 입력해주세요!")
+                    st.warning("⚠️️ 거래처 안경원 이름을 선택하거나 입력해주세요!")
                 else:
                     st.session_state.current_client = selected_target
                     st.session_state.step = "select_model"
@@ -407,7 +411,7 @@ else:
                         
                         if submitted:
                             if len(color_inputs) == 0:
-                                st.warning("⚠️ 선택된 컬러가 없습니다.")
+                                st.warning("⚠️️ 선택된 컬러가 없습니다.")
                             else:
                                 zero_stock_items = []
                                 normal_items = []
