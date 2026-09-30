@@ -88,7 +88,6 @@ else:
                     if (mainContainer) { mainContainer.scrollTo(0, 0); }
                     var stContainer = window.parent.document.querySelector('.stMain');
                     if (stContainer) { stContainer.scrollTo(0, 0); }
-                    // 포커스가 아래쪽 입력칸으로 쏠리는 것 강제 해제
                     if (window.parent.document.activeElement) {
                         window.parent.document.activeElement.blur();
                     }
@@ -234,7 +233,7 @@ else:
             st.markdown("")
             if st.button("👉 주문서 작성 시작", type="primary", use_container_width=True):
                 if not selected_target or selected_target.strip() == "":
-                    st.warning("⚠️️ 거래처 안경원 이름을 선택하거나 입력해주세요!")
+                    st.warning("⚠️ 거래처 안경원 이름을 선택하거나 입력해주세요!")
                 else:
                     st.session_state.current_client = selected_target
                     st.session_state.step = "select_model"
@@ -411,7 +410,7 @@ else:
                         
                         if submitted:
                             if len(color_inputs) == 0:
-                                st.warning("⚠️️ 선택된 컬러가 없습니다.")
+                                st.warning("⚠️ 선택된 컬러가 없습니다.")
                             else:
                                 zero_stock_items = []
                                 normal_items = []
@@ -633,11 +632,11 @@ else:
                     
                     col_save, col_add, col_cancel = st.columns(3)
                     with col_save:
-                        if st.button("💾 저장", key=f"save_draft_{i}", use_container_width=True, type="primary"):
-                            st.success("저장됨!")
+                        if st.button("💾 변경사항저장", key=f"save_draft_{i}", use_container_width=True, type="primary"):
+                            st.success("변경사항이 저장되었습니다!")
                             st.rerun()
                     with col_add:
-                        if st.button("➕ 모델추가", key=f"add_more_to_draft_{i}", use_container_width=True):
+                        if st.button("➕ 제품추가", key=f"add_more_to_draft_{i}", use_container_width=True):
                             st.session_state.current_client = draft['거래처']
                             st.session_state.cart = draft["내역"].copy()
                             st.session_state.cart_memo = draft.get("요청사항", "")
@@ -646,7 +645,7 @@ else:
                             st.session_state.active_tab = "새주문"
                             st.rerun()
                     with col_cancel:
-                        if st.button("❌ 취소", key=f"del_draft_{i}", use_container_width=True):
+                        if st.button("❌ 주문취소", key=f"del_draft_{i}", use_container_width=True):
                             st.session_state.drafts.pop(i)
                             st.rerun()
         else:
