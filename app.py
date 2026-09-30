@@ -46,10 +46,9 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 📱 상단 바 겹침 방지 패딩(padding-top) 및 하단 탭 바 스타일 주입
+    # 모바일 최적화 및 좌우 가로배치 카드 스타일 주입
     st.markdown("""
         <style>
-        /* Streamlit 상단 기본 툴바에 콘텐츠가 가리지 않도록 상단 여백 확보 */
         .block-container {
             padding-top: 2.8rem !important;
             padding-bottom: 6rem !important;
@@ -76,7 +75,6 @@ else:
             font-size: 11px;
             color: #aaaaaa;
         }
-        /* 🕶️ 현재 선택된 거래처 강조용 블랙 박스 스타일 */
         .client-highlight-box {
             background-color: #111111;
             color: #ffffff;
@@ -229,6 +227,7 @@ else:
             st.markdown("---")
             st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 5px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
             
+            # 🖼️ 스케치 반영: 좌우 2분할 가로배치 카드 디자인 적용
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
                 material = str(row[material_col]).strip() if material_col else "기타"
@@ -250,19 +249,28 @@ else:
                     box_bg = "#eaeaea"
                     border_c = "#cccccc"
                     badge_c = "#555555"
+
+                # 좌우 2분할 (왼쪽: 모델정보, 오른쪽: 선택 버튼)
+                col_info, col_btn = st.columns([2.3, 1.2])
                 
-                st.markdown(f"""
-                <div style="padding: 8px 12px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 8px 8px 0 0; margin-top: 8px; font-weight: 700; color: #111; display: flex; justify-content: space-between; align-items: center; font-size: 14px;">
-                    <span>🕶️ {model_name}</span>
-                    <span style="background-color: {badge_c}; color: white; padding: 2px 5px; border-radius: 4px; font-size: 10px;">{material}</span>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if st.button(f"👉 선택 (단가: ₩ {price:,})", key=f"unified_card_{idx}", use_container_width=True, type="primary"):
-                    st.session_state.selected_model = model_name
-                    st.session_state.unit_price = price
-                    st.session_state.step = "select_color"
-                    st.rerun()
+                with col_info:
+                    st.markdown(f"""
+                    <div style="padding: 10px 12px; background-color: {box_bg}; border: 2px solid {border_c}; border-radius: 8px; height: 100%; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
+                        <div style="font-size: 15px; font-weight: 700; color: #111; margin-bottom: 4px;">🕶️ {model_name}</div>
+                        <div style="display: flex; gap: 6px; align-items: center; font-size: 12px;">
+                            <span style="background-color: {badge_c}; color: white; padding: 2px 5px; border-radius: 4px; font-weight: 600;">{material}</span>
+                            <span style="color: #444; font-weight: 600;">₩ {price:,}</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                with col_btn:
+                    st.markdown("<div style='margin-top: 4px;'></div>", unsafe_allow_html=True)
+                    if st.button("선택", key=f"split_card_{idx}", use_container_width=True, type="primary"):
+                        st.session_state.selected_model = model_name
+                        st.session_state.unit_price = price
+                        st.session_state.step = "select_color"
+                        st.rerun()
 
             if len(st.session_state.cart) > 0:
                 st.markdown("---")
@@ -501,7 +509,7 @@ else:
                 with c2:
                     st.write(f"{item['수량']}개 (₩ {item['금액']:,})")
                 with c3:
-                    if st.button("🗑️️", key=f"cart_page_del_{idx}"):
+                    if st.button("🗑️", key=f"cart_page_del_{idx}"):
                         st.session_state.cart.pop(idx)
                         st.rerun()
                         
