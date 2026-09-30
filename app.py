@@ -46,7 +46,7 @@ else:
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 및 소재별 버튼 색상 CSS 주입
+    # 모바일 최적화 및 소재별 버튼 색상 강제 적용 CSS 주입
     st.markdown("""
         <style>
         .block-container {
@@ -88,42 +88,57 @@ else:
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
         
-        /* 🎨 소재별 맞춤 컬러 버튼 디자인 */
+        /* 🎨 소재별 맞춤 컬러 버튼 강제 스타일링 */
         div.titan-btn button {
             background-color: #444444 !important;
             color: #ffffff !important;
             border: 1px solid #333333 !important;
-            border-radius: 8px;
-            font-weight: 700;
-            height: 48px;
-            font-size: 15px;
+            border-radius: 8px !important;
+            font-weight: 700 !important;
+            height: 48px !important;
+            font-size: 15px !important;
         }
+        div.titan-btn button p {
+            color: #ffffff !important;
+        }
+
         div.acetate-btn button {
             background-color: #8c5830 !important;
             color: #ffffff !important;
             border: 1px solid #6e4424 !important;
-            border-radius: 8px;
-            font-weight: 700;
-            height: 48px;
-            font-size: 15px;
+            border-radius: 8px !important;
+            font-weight: 700 !important;
+            height: 48px !important;
+            font-size: 15px !important;
         }
+        div.acetate-btn button p {
+            color: #ffffff !important;
+        }
+
         div.combi-btn button {
             background-color: #1e6b54 !important;
             color: #ffffff !important;
             border: 1px solid #144b3c !important;
-            border-radius: 8px;
-            font-weight: 700;
-            height: 48px;
-            font-size: 15px;
+            border-radius: 8px !important;
+            font-weight: 700 !important;
+            height: 48px !important;
+            font-size: 15px !important;
         }
+        div.combi-btn button p {
+            color: #ffffff !important;
+        }
+
         div.etc-btn button {
             background-color: #ffffff !important;
             color: #111111 !important;
             border: 1px solid #cccccc !important;
-            border-radius: 8px;
-            font-weight: 700;
-            height: 48px;
-            font-size: 15px;
+            border-radius: 8px !important;
+            font-weight: 700 !important;
+            height: 48px !important;
+            font-size: 15px !important;
+        }
+        div.etc-btn button p {
+            color: #111111 !important;
         }
         
         div.stButton > button:hover {
@@ -260,7 +275,7 @@ else:
             st.markdown("---")
             st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 8px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
             
-            # 🔥 소재별 맞춤 컬러 클래스를 적용하여 모델 버튼 렌더링
+            # 🔥 소재별 컬러 클래스를 감싼 버튼 렌더링
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
                 material = str(row[material_col]).strip() if material_col else "기타"
@@ -280,7 +295,7 @@ else:
                     css_class = "etc-btn"
 
                 st.markdown(f'<div class="{css_class}">', unsafe_allow_html=True)
-                if st.button(f"🕶️ {model_name}", key=f"mat_colored_btn_{idx}", use_container_width=True):
+                if st.button(f"🕶️ {model_name}", key=f"force_colored_btn_{idx}", use_container_width=True):
                     st.session_state.selected_model = model_name
                     st.session_state.unit_price = price
                     st.session_state.step = "select_color"
@@ -597,7 +612,7 @@ else:
                         with col_q:
                             new_qty = st.number_input("수량", min_value=1, max_value=100, value=int(item['수량']), key=f"edit_q_{i}_{item_idx}", label_visibility="collapsed")
                         with col_del:
-                            remove_item = st.button("🗑️️", key=f"del_item_{i}_{item_idx}")
+                            remove_item = st.button("🗑️", key=f"del_item_{i}_{item_idx}")
                         
                         if not remove_item:
                             updated_items.append({
