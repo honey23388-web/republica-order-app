@@ -228,7 +228,6 @@ else:
             st.markdown("---")
             st.markdown("<p style='font-size: 13px; font-weight: 700; color: #666; margin-bottom: 8px; letter-spacing: 1px;'>ALL MODELS</p>", unsafe_allow_html=True)
             
-            # 🔥 소재별 테스트 아이콘 적용
             for idx, row in df_models.iterrows():
                 model_name = str(row[model_col])
                 material = str(row[material_col]).strip() if material_col else "기타"
@@ -239,16 +238,16 @@ else:
 
                 mat_lower = material.lower()
                 if "티타늄" in mat_lower:
-                    icon_prefix = "🔩" # 티타늄
+                    icon_prefix = "🔩"
                 elif "아세테이트" in mat_lower:
-                    icon_prefix = "🏷️" # 아세테이트
+                    icon_prefix = "🏷️"
                 elif "콤비" in mat_lower:
-                    icon_prefix = "🔗" # 콤비
+                    icon_prefix = "🔗"
                 else:
-                    icon_prefix = "🕶️" # 기타
+                    icon_prefix = "🕶️"
 
                 btn_label = f"{icon_prefix} {model_name}"
-                if st.button(btn_label, key=f"test_icon_btn_{idx}", use_container_width=True):
+                if st.button(btn_label, key=f"mat_icon_btn_{idx}", use_container_width=True):
                     st.session_state.selected_model = model_name
                     st.session_state.unit_price = price
                     st.session_state.step = "select_color"
@@ -281,7 +280,8 @@ else:
                         st.rerun()
                 
             st.markdown("---")
-            st.markdown(f"### 컬러별 수량 지정")
+            # 🔥 요청사항 반영: 타이틀 텍스트 크기를 작고 깔끔하게 정리
+            st.markdown("<p style='font-size: 14px; font-weight: 700; color: #444; margin-bottom: 10px;'>🎨 컬러별 수량 지정</p>", unsafe_allow_html=True)
 
             selected_model_name = st.session_state.selected_model
             unit_price = st.session_state.unit_price
@@ -355,13 +355,17 @@ else:
                                 except:
                                     stock_qty = 0
                             
-                            c1, c2 = st.columns([3, 1])
-                            with c1:
+                            # 🔥 각 컬러 항목을 좌우 가로배치(왼쪽: 컬러명/체크박스, 오른쪽: 수량 입력)로 압축
+                            col_info, col_qty = st.columns([2.3, 1.2])
+                            with col_info:
                                 stock_color_style = "color: #cc0000;" if stock_qty == 0 else "color: #0066cc;"
-                                st.markdown(f"**{color_label}** <span style='{stock_color_style} font-size: 12px;'>(재고:<b>{stock_qty}</b>)</span>", unsafe_allow_html=True)
-                                is_checked = st.checkbox("선택", key=f"chk_{clean_selected_model}_{idx}", label_visibility="collapsed")
-                            with c2:
-                                qty = st.number_input("수량", min_value=1, max_value=100, value=1, step=1, key=f"qty_{clean_selected_model}_{idx}", label_visibility="collapsed")
+                                st.markdown(f"<div style='font-size: 13px; font-weight: 700; margin-bottom: 2px;'>{color_label}</div><span style='{stock_color_style} font-size: 11px;'>재고: <b>{stock_qty}</b>개</span>", unsafe_allow_html=True)
+                                is_checked = st.checkbox("선택", key=f"chk_{clean_selected_model}_{idx}")
+                            with col_qty:
+                                st.markdown("<div style='height: 2px;'></div>", unsafe_allow_html=True)
+                                qty = st.number_input("수량", min_value=1, max_value=100, value=1, step=1, key=f"qty_{clean_selected_model}_{idx}")
+                            
+                            st.markdown("<hr style='margin: 8px 0; border: 0; border-top: 1px solid #eee;'>", unsafe_allow_html=True)
                             
                             if is_checked:
                                 color_inputs.append({"컬러": color_label, "수량": qty, "재고": stock_qty})
@@ -564,7 +568,7 @@ else:
                         with col_q:
                             new_qty = st.number_input("수량", min_value=1, max_value=100, value=int(item['수량']), key=f"edit_q_{i}_{item_idx}", label_visibility="collapsed")
                         with col_del:
-                            remove_item = st.button("🗑️", key=f"del_item_{i}_{item_idx}")
+                            remove_item = st.button("🗑️️", key=f"del_item_{i}_{item_idx}")
                         
                         if not remove_item:
                             updated_items.append({
