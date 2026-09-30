@@ -34,12 +34,12 @@ def load_data():
     except Exception as e:
         return None, None, None
 
-# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (에러 메시지 출력 기능 포함)
+# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (정확한 sboapi 주소 반영)
 def send_order_to_ecount(cart_items, client_name, memo, df_colors):
     try:
-        # 1단계: ZONE 조회
+        # 1단계: ZONE 조회 (올바른 sboapi 주소 적용)
         zone_res = requests.post(
-            "https://oapi.ecount.com/OAPI/V2/Common/GetZone",
+            "https://sboapi.ecount.com/OAPI/V2/Zone",
             json={"COM_CODE": ECOUNT_COM_CODE},
             timeout=5
         )
@@ -51,7 +51,7 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
         
         # 2단계: 로그인 (세션 발급)
         login_res = requests.post(
-            f"https://oapi{zone}.ecount.com/OAPI/V2/OAPILogin",
+            f"https://sboapi{zone}.ecount.com/OAPI/V2/OAPILogin",
             json={
                 "COM_CODE": ECOUNT_COM_CODE,
                 "USER_ID": ECOUNT_USER_ID,
@@ -116,7 +116,7 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
         }
         
         order_res = requests.post(
-            f"https://oapi{zone}.ecount.com/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}",
+            f"https://sboapi{zone}.ecount.com/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}",
             json=order_payload,
             timeout=10
         )
@@ -658,7 +658,7 @@ else:
                     st.session_state.step = "input_client"
                     
             with col3:
-                if st.button("🧹 비우기", use_container_width=True):
+                if st.button("🧹 비우기", use_keyword_width=True if 'use_keyword_width' in globals() else False, use_container_width=True):
                     st.session_state.cart = []
                     st.session_state.cart_memo = ""
                     st.rerun()
@@ -683,9 +683,10 @@ else:
                         with col_c:
                             st.write(f"{item['컬러']}")
                         with col_q:
+                    
                             new_qty = st.number_input("수량", min_value=1, max_value=100, value=int(item['수량']), key=f"edit_q_{i}_{item_idx}", label_visibility="collapsed")
                         with col_del:
-                            remove_item = st.button("🗑️️", key=f"del_item_{i}_{item_idx}")
+                            remove_item = st.button("🗑️", key=f"del_item_{i}_{item_idx}")
                         
                         if not remove_item:
                             updated_items.append({
@@ -733,7 +734,7 @@ else:
         if not df_colors.empty:
             st.dataframe(df_colors, use_container_width=True)
         else:
-            st.warning("재고 데이터를 불러올 수 없습니다.")
+            st.warning("⚠️ 재고 데이터를 불러올 수 없습니다.")
 
     elif active_view == "매장별 히스토리":
         st.title("📊 매장별 히스토리")
@@ -752,7 +753,7 @@ else:
         if selected_client_history and selected_client_history != "등록된 거래처 없음":
             client_row = df_clients[df_clients[df_clients.columns[0]].astype(str).str.strip() == selected_client_history]
             
-            ad_balance, mi_suku, sheet_memo, sheet_res = "0", "0", "없음", "0"
+            ad_balance, mi_suku, sheet_memo, sky_res = "0", "0", "없음", "0"
             if not client_row.empty:
                 r = client_row.iloc[0]
                 try: ad_balance = str(r.iloc[1]) if len(r) > 1 else "0"
@@ -761,13 +762,13 @@ else:
                 except: pass
                 try: sheet_memo = str(r.iloc[3]) if len(r) > 3 else "없음"
                 except: pass
-                try: sheet_res = str(r.iloc[4]) if len(r) > 4 else "0"
+                try: sky_res = str(r.iloc[4]) if len(r) > 4 else "0"
                 except: pass
 
             col_h1, col_h2, col_h3 = st.columns(3)
             with col_h1: st.metric(label="적립잔액", value=ad_balance)
             with col_h2: st.metric(label="미수금", value=mi_suku)
-            with col_h3: st.metric(label="미출고", value=f"{sheet_res}개")
+            with col_h3: st.metric(label="미출고", value=f"{sky_res}개")
                 
             if sheet_memo and sheet_memo != "nan" and sheet_memo != "없음":
                 st.info(f"📝 {sheet_memo}")
@@ -783,8 +784,8 @@ else:
                             res_copy['주문시간'] = draft['시간']
                             reserved_items.append(res_copy)
                             
-            if reserved_items:
-                st.dataframe(pd.DataFrame(reserved_items)[['주문시간', '모델명', '컬러', '수량']], use_container_width=True)
+            if res_items := reserved_items:
+                st.dataframe(pd.DataFrame(res_items)[['주문시간', '모델명', '컬러', '수량']], use_container_width=True)
             else:
                 st.info("미출고 예약 내역 없음")
 
