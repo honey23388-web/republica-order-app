@@ -34,12 +34,12 @@ def load_data():
     except Exception as e:
         return None, None, None
 
-# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (URI 경로 수정 반영)
+# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (ECERP 경로 포함 공식 규격 반영)
 def send_order_to_ecount(cart_items, client_name, memo, df_colors):
     try:
         # 1단계: ZONE 조회
         zone_res = requests.post(
-            "https://sboapi.ecount.com/OAPI/V2/Zone",
+            "https://sboapi.ecount.com/ECERP/OAPI/V2/Zone",
             json={"COM_CODE": ECOUNT_COM_CODE},
             timeout=5
         )
@@ -50,7 +50,7 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
             return False
             
         zone = str(zone_info.get("ZONE", "CC")).lower()
-        base_url = f"https://sboapi{zone}.ecount.com"
+        base_url = f"https://sboapi{zone}.ecount.com/ECERP"
         
         # 2단계: 로그인 (세션 발급)
         login_res = requests.post(
@@ -122,7 +122,7 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors):
             }
         }
         
-        # 올바른 판매주문서 입력 엔드포인트 URL 조합
+        # 올바른 ECERP 경로가 포함된 판매주문서 입력 엔드포인트 호출
         order_res = requests.post(
             f"{base_url}/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}",
             json=order_payload,
@@ -392,7 +392,7 @@ else:
                 if "티타늄" in mat_lower: icon_prefix = "🔩"
                 elif "아세테이트" in mat_lower: icon_prefix = "🏷️"
                 elif "콤비" in mat_lower: icon_prefix = "🔗"
-                else: icon_prefix = "🕶️"
+                else: icon_prefix = "🕶️️"
 
                 btn_label = f"{icon_prefix} {model_name}"
                 if st.button(btn_label, key=f"mat_icon_btn_{idx}", use_container_width=True):
@@ -411,7 +411,7 @@ else:
                 </div>
             """, unsafe_allow_html=True)
             
-            if st.button("⬅️ 모델 다시 고르기", use_container_width=True):
+            if st.button("⬅️️ 모델 다시 고르기", use_container_width=True):
                 st.session_state.step = "select_model"
                 st.rerun()
 
@@ -693,7 +693,7 @@ else:
                         with col_q:
                             new_qty = st.number_input("수량", min_value=1, max_value=100, value=int(item['수량']), key=f"edit_q_{i}_{item_idx}", label_visibility="collapsed")
                         with col_del:
-                            remove_item = st.button("🗑️", key=f"del_item_{i}_{item_idx}")
+                            remove_item = st.button("🗑️️", key=f"del_item_{i}_{item_idx}")
                         
                         if not remove_item:
                             updated_items.append({
