@@ -27,14 +27,6 @@ def load_data():
 
 df_models, df_colors, df_clients = load_data()
 
-# 사이드바 최신 데이터 새로고침 버튼
-st.sidebar.markdown("### 👓 REPUBLICA B2B")
-st.sidebar.markdown("---")
-if st.sidebar.button("🔄 최신 데이터 새로고침", use_container_width=True):
-    st.cache_data.clear()
-    st.success("캐시가 초기화되었습니다!")
-    st.rerun()
-
 if df_models is None or df_models.empty:
     st.error("⚠️ 구글 시트 데이터를 불러오는 데 실패했습니다.")
     st.info("💡 해결 방법:\n1. 구글 시트 링크 및 공유 설정을 확인해 주세요.\n2. 탭 이름이 **model**, **color**, **client**인지 확인해 주세요.")
@@ -51,28 +43,31 @@ else:
         st.session_state.pending_reservation_items = []
     if 'cart_memo' not in st.session_state:
         st.session_state.cart_memo = ""
+    # 앱 내부 화면 전환 상태 관리 (하단 탭 바 연동)
+    if 'active_tab' not in st.session_state:
+        st.session_state.active_tab = "새주문"
 
-    # 모바일 최적화 CSS 스타일 주입 (상단 여백 최소화)
+    # 모바일 최적화 CSS 스타일 주입 (상단 패딩 축소 및 하단 고정바 스타일)
     st.markdown("""
         <style>
         .block-container {
-            padding-top: 1.5rem;
-            padding-bottom: 2rem;
+            padding-top: 1rem;
+            padding-bottom: 5rem; /* 하단 네비게이션 바 공간 확보 */
         }
         .main {
             background-color: #fcfcfc;
         }
         .brand-header {
-            padding: 10px;
+            padding: 8px;
             background: linear-gradient(135deg, #111111, #333333);
             color: white;
             border-radius: 8px;
             text-align: center;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .brand-header h1 {
             margin: 0;
-            font-size: 20px;
+            font-size: 19px;
             font-weight: 700;
             letter-spacing: 1px;
         }
@@ -94,23 +89,47 @@ else:
     """, unsafe_allow_html=True)
     
     cart_count = sum(item['수량'] for item in st.session_state.cart)
-    
-    nav_choice = st.sidebar.radio(
-        "메뉴 선택", 
-        [
-            "새주문", 
-            f"장바구니 ({cart_count})", 
-            "주문서", 
-            "재고현황", 
-            "매장별 히스토리 보기",
-            "현황"
-        ]
-    )
 
     # -------------------------------------------------------------------------
-    # 1. 새주문 메뉴
+    # 왼쪽 상단 사이드바 (조회 메뉴 및 데이터 새로고침)
     # -------------------------------------------------------------------------
-    if nav_choice == "새주문":
+    st.sidebar.markdown("### 👓 REPUBLICA B2B")
+    st.sidebar.markdown("---")
+    
+    if st.sidebar.button("🔄 최신 데이터 새로고침", use_container_width=True):
+        st.cache_data.clear()
+        st.success("캐시가 초기화되었습니다!")
+        st.rerun()
+        
+    st.sidebar.markdown("#### 📂 추가 조회 메뉴")
+    sub_menu = st.sidebar.radio(
+        "조회 메뉴 선택", 
+        [
+            "선택 안함 (메인 화면 유지)",
+            "📦 재고현황", 
+            "📊 매장별 히스토리 보기", 
+            "📈 실적현황"
+        ],
+        label_visibility="collapsed"
+    )
+    
+    # 사이드바에서 조회 메뉴를 선택했을 경우 우선 적용
+    if sub_menu != "선택 안함 (메인 화면 유지)":
+        if "재고현황" in sub_menu:
+            active_view = "재고현황"
+        elif "매장별 히스토리" in sub_menu:
+            active_view = "매장별 히스토리"
+        elif "실적현황" in sub_menu:
+            active_view = "실적현황"
+    else:
+        active_view = st.session_state.active_tab
+
+    # -------------------------------------------------------------------------
+    # 메인 화면 라우팅 (하단 탭 바 또는 사이드바 선택에 따름)
+    # -------------------------------------------------------------------------
+    
+    # 1. 새주문 화면
+    if active_view == "새주문":
         if st.session_state.step == "input_client":
             st.markdown("""
                 <div class="brand-header">
@@ -119,7 +138,6 @@ else:
                 </div>
             """, unsafe_allow_html=True)
             
-            # 모바일에 맞게 여백을 극도로 압축한 거래처 선택 화면
             client_type = st.radio("거래처 유형 선택", ["기존 거래처", "신규 계약"], horizontal=True, label_visibility="collapsed")
             
             known_clients = []
@@ -174,7 +192,7 @@ else:
             all_model_names = df_models[model_col].astype(str).tolist()
             search_query = st.selectbox("모델명 검색 또는 선택", ["-- 모델 검색 --"] + all_model_names)
             
-            if search_query != "-- 모델 검색 --":
+            if search_query != "-- model 검색 --" and search_query != "-- 모델 검색 --":
                 matched_row = df_models[df_models[model_col].astype(str) == search_query].iloc[0]
                 model_name = str(matched_row[model_col])
                 material = str(matched_row[material_col]).strip() if material_col else "기타"
@@ -231,6 +249,7 @@ else:
             if len(st.session_state.cart) > 0:
                 st.markdown("---")
                 if st.button("🛒 장바구니 확인 / 주문 완료", use_container_width=True):
+                    st.session_state.active_tab = "장바구니"
                     st.session_state.step = "goto_cart_tab"
                     st.rerun()
 
@@ -252,6 +271,7 @@ else:
             with c_back2:
                 if len(st.session_state.cart) > 0:
                     if st.button("🛒 장바구니 가기", use_container_width=True, type="primary"):
+                        st.session_state.active_tab = "장바구니"
                         st.session_state.step = "goto_cart_tab"
                         st.rerun()
                 
@@ -397,12 +417,13 @@ else:
                             st.rerun()
                     with b_col2:
                         if st.button("🛒 장바구니 확인", type="primary", use_container_width=True):
+                            st.session_state.active_tab = "장바구니"
                             st.session_state.step = "goto_cart_tab"
                             st.rerun()
 
         if st.session_state.step == "goto_cart_tab":
-            st.title("🛒 장바구니")
-            st.markdown(f"**{st.session_state.current_client}**")
+            st.title("🛒 장바구니 현황")
+            st.markdown(f"현재 거래처: **{st.session_state.current_client}**")
             
             for idx, item in enumerate(st.session_state.cart):
                 c1, c2, c3 = st.columns([4, 2, 1])
@@ -410,31 +431,33 @@ else:
                     memo_txt = f" [{item['비고']}]" if item.get('비고') else ""
                     st.write(f"**{item['모델명']}** / {item['컬러']}{memo_txt}")
                 with c2:
-                    st.write(f"{item['수량']}개 (₩ {item['금액']:,})")
+                    st.write(f"수량: {item['수량']}개 (₩ {item['금액']:,})")
                 with c3:
-                    if st.button("🗑️", key=f"step_del_{idx}"):
+                    if st.button("🗑️ 삭제", key=f"step_del_{idx}"):
                         st.session_state.cart.pop(idx)
                         st.rerun()
                         
             st.markdown("---")
             total_price = sum(item['금액'] for item in st.session_state.cart)
-            st.markdown(f"### 총 금액: **₩ {total_price:,}**")
+            st.markdown(f"### 💰 총 주문 금액: **₩ {total_price:,}**")
             
-            st.markdown("##### 📝 요청(특이)사항")
+            st.markdown("")
+            st.markdown("##### 📝 요청 (특이) 사항")
             st.session_state.cart_memo = st.text_area(
-                "특이사항", 
+                "특이사항 입력", 
                 value=st.session_state.cart_memo, 
-                placeholder="전달사항 입력",
+                placeholder="매장별 전달사항이나 특이사항을 입력해 주세요.",
                 label_visibility="collapsed"
             )
             
+            st.markdown("")
             sc1, sc2 = st.columns(2)
             with sc1:
-                if st.button("➕ 모델 추가", use_container_width=True):
+                if st.button("➕ 모델 추가로 담으러 가기", use_container_width=True):
                     st.session_state.step = "select_model"
                     st.rerun()
             with sc2:
-                if st.button("🚀 주문 완료", type="primary", use_container_width=True):
+                if st.button("🚀 최종 주문 완료하기", type="primary", use_container_width=True):
                     st.session_state.drafts.append({
                         "거래처": st.session_state.current_client,
                         "시간": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -442,16 +465,14 @@ else:
                         "내역": st.session_state.cart.copy(),
                         "요청사항": st.session_state.cart_memo.strip()
                     })
-                    st.success("주문 완료!")
+                    st.success("주문이 성공적으로 완료되었습니다!")
                     st.session_state.cart = []
                     st.session_state.cart_memo = ""
                     st.session_state.step = "input_client"
                     st.rerun()
 
-    # -------------------------------------------------------------------------
-    # 2. 장바구니 메뉴
-    # -------------------------------------------------------------------------
-    elif nav_choice.startswith("장바구니"):
+    # 2. 장바구니 화면
+    elif active_view == "장바구니":
         st.title("🛒 장바구니")
         st.markdown(f"**{st.session_state.current_client or '미지정'}**")
         st.markdown("---")
@@ -517,10 +538,8 @@ else:
         else:
             st.info("장바구니가 비어 있습니다.")
 
-    # -------------------------------------------------------------------------
-    # 3. 주문서 메뉴
-    # -------------------------------------------------------------------------
-    elif nav_choice == "주문서":
+    # 3. 주문서 화면
+    elif active_view == "주문서":
         st.title("📋 주문서 리스트")
         st.markdown("---")
         
@@ -573,6 +592,7 @@ else:
                             st.session_state.cart_memo = draft.get("요청사항", "")
                             st.session_state.drafts.pop(i)
                             st.session_state.step = "select_model"
+                            st.session_state.active_tab = "새주문"
                             st.rerun()
                     with col_cancel:
                         if st.button("❌ 취소", key=f"del_draft_{i}", use_container_width=True):
@@ -581,10 +601,8 @@ else:
         else:
             st.info("작성된 주문서가 없습니다.")
 
-    # -------------------------------------------------------------------------
-    # 4. 재고현황 메뉴
-    # -------------------------------------------------------------------------
-    elif nav_choice == "재고현황":
+    # 4. 재고현황 화면 (사이드바 메뉴 연동)
+    elif active_view == "재고현황":
         st.title("📦 재고 현황")
         st.markdown("---")
         if not df_colors.empty:
@@ -592,10 +610,8 @@ else:
         else:
             st.warning("재고 데이터를 불러올 수 없습니다.")
 
-    # -------------------------------------------------------------------------
-    # 5. 매장별 히스토리 보기 메뉴
-    # -------------------------------------------------------------------------
-    elif nav_choice == "매장별 히스토리 보기":
+    # 5. 매장별 히스토리 화면 (사이드바 메뉴 연동)
+    elif active_view == "매장별 히스토리":
         st.title("📊 매장별 히스토리")
         st.markdown("---")
         
@@ -651,11 +667,9 @@ else:
             else:
                 st.info("미출고 예약 내역 없음")
 
-    # -------------------------------------------------------------------------
-    # 6. 현황 메뉴
-    # -------------------------------------------------------------------------
-    elif nav_choice == "현황":
-        st.title("📊 매출 현황")
+    # 6. 실적현황 화면 (사이드바 메뉴 연동)
+    elif active_view == "실적현황":
+        st.title("📈 실적현황")
         st.markdown("---")
         
         if len(st.session_state.drafts) == 0:
@@ -679,3 +693,48 @@ else:
                 st.metric(label="총 매출액", value=f"₩ {total_sales:,}")
             with m2:
                 st.metric(label="총 판매수량", value=f"{total_qty:,}개")
+
+    # -------------------------------------------------------------------------
+    # [하단 고정 네비게이션 탭 바 (옛날 아이폰 하부 스타일)]
+    # -------------------------------------------------------------------------
+    st.markdown("""
+        <style>
+        /* 하단 고정 네비게이션 바 컨테이너 */
+        .fixed-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #ffffff;
+            border-top: 1px solid #e0e0e0;
+            padding: 8px 10px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 99999;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # 하단에 항상 고정되는 4개의 핵심 버튼 배치
+    b1, b2, b3, b4 = st.columns(4)
+    with b1:
+        if st.button("📝 새주문", use_container_width=True):
+            st.session_state.active_tab = "새주문"
+            st.rerun()
+    with b2:
+        cart_btn_label = f"🛒 장바구니({cart_count})" if cart_count > 0 else "🛒 장바구니"
+        if st.button(cart_btn_label, use_container_width=True):
+            st.session_state.active_tab = "장바구니"
+            st.session_state.step = "goto_cart_tab"
+            st.rerun()
+    with b3:
+        if st.button("📋 주문서", use_container_width=True):
+            st.session_state.active_tab = "주문서"
+            st.rerun()
+    with b4:
+        if st.button("🔄 새로고침", use_container_width=True):
+            st.cache_data.clear()
+            st.success("데이터 갱신 완료!")
+            st.rerun()
