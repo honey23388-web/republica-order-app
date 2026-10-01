@@ -13,7 +13,7 @@ WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyBmjN8f2UkUbL3TrRK7zvkES
 # 🌟 이카운트 ERP API 연동 정보 세팅
 ECOUNT_COM_CODE = "647322"
 ECOUNT_USER_ID = "REPUBLICA"
-ECOUNT_API_KEY = "0c0256f6848de49078137b95024870e0e6"
+ECOUNT_API_KEY = "YOUR_API_KEY"
 
 @st.cache_data(ttl=3600)
 def load_data():
