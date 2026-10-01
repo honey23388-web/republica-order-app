@@ -34,7 +34,7 @@ def load_data():
     except Exception as e:
         return None, None, None
 
-# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수 (URL 경로 정돈 및 매장코드/품목코드 매핑 반영)
+# 🌟 이카운트 ERP '판매주문서 입력' 전송 함수
 def send_order_to_ecount(cart_items, client_name, memo, df_colors, df_clients):
     try:
         # 1단계: ZONE 조회
@@ -43,18 +43,21 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors, df_clients):
             json={"COM_CODE": ECOUNT_COM_CODE},
             timeout=5
         )
+
         zone_data = zone_res.json()
         zone_info = zone_data.get("Data")
+
         if not zone_info or "ZONE" not in zone_info:
             st.error(f"이카운트 Zone 조회 실패: {zone_data}")
             return False
-            
+
         zone = str(zone_info.get("ZONE", "CC")).lower()
-        base_url = f"https://sboapi{zone}.ecount.com/ECERP"
-        
-        # 2단계: 로그인 (세션 발급)
+
+        # 2단계: 로그인 (SESSION_ID 발급)
+        login_url = f"https://sboapi{zone}.ecount.com/ECERP/OAPI/V2/OAPILogin"
+
         login_res = requests.post(
-            f"{base_url}/OAPI/V2/OAPILogin",
+            login_url,
             json={
                 "COM_CODE": ECOUNT_COM_CODE,
                 "USER_ID": ECOUNT_USER_ID,
@@ -64,65 +67,114 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors, df_clients):
             },
             timeout=5
         )
+
         login_data = login_res.json()
         login_data_block = login_data.get("Data", {})
+
         session_id = (
-            login_data_block.get("Datas", {}).get("SESSION_ID") or 
-            login_data_block.get("SESSION_ID") or 
-            login_data_block.get("Session_Id")
+            login_data_block.get("Datas", {}).get("SESSION_ID")
+            or login_data_block.get("SESSION_ID")
+            or login_data_block.get("Session_Id")
         )
-        
+
         if not session_id:
             st.error(f"이카운트 로그인 실패: {login_data}")
             return False
-            
-        # 💡 F열(매장코드) 매핑 처리
+
+        # 3단계: 거래처명 → ECOUNT 거래처코드 변환
         cust_cd = client_name
+
         try:
-            clean_target = str(client_name).replace("[신규]", "").strip().upper()
+            clean_target = (
+                str(client_name)
+                .replace("[신규]", "")
+                .strip()
+                .upper()
+            )
+
             if df_clients is not None and not df_clients.empty:
                 for _, r in df_clients.iterrows():
+
                     sheet_c_name = str(r.iloc[0]).strip().upper()
+
                     if sheet_c_name == clean_target:
+
+                        # client 시트 F열 = ECOUNT 거래처코드
                         if len(r) > 5 and pd.notna(r.iloc[5]):
                             cust_cd = str(r.iloc[5]).strip()
+
                         break
-        except:
+
+        except Exception:
             pass
 
-        # 3단계: 판매주문서 입력 데이터 구성
+        # 4단계: 주문 상세 데이터 생성
         today_str = datetime.datetime.now().strftime("%Y%m%d")
+
         details = []
-        
+
         for idx, item in enumerate(cart_items):
-            prod_cd = item['모델명']
+
+            # 기본값은 모델명
+            prod_cd = item["모델명"]
+
+            # Google Sheet color 데이터에서
+            # ECOUNT 품목코드 찾기
             try:
-                m_clean = str(item['모델명']).split('(')[0].strip().upper()
-                c_clean = str(item['컬러']).strip().upper()
-                
+                m_clean = (
+                    str(item["모델명"])
+                    .split("(")[0]
+                    .strip()
+                    .upper()
+                )
+
+                c_clean = str(item["컬러"]).strip().upper()
+
                 for _, r in df_colors.iterrows():
-                    row_model = str(r.iloc[0]).split('(')[0].strip().upper()
+
+                    row_model = (
+                        str(r.iloc[0])
+                        .split("(")[0]
+                        .strip()
+                        .upper()
+                    )
+
                     row_col_code = str(r.iloc[1]).strip().upper()
                     row_col_name = str(r.iloc[2]).strip().upper()
-                    row_full_col = f"{row_col_code} / {row_col_name}".strip(" /")
-                    
-                    if row_model == m_clean and (row_col_code in c_clean or row_col_name in c_clean or row_full_col in c_clean):
+
+                    row_full_col = (
+                        f"{row_col_code} / {row_col_name}"
+                        .strip(" /")
+                    )
+
+                    if (
+                        row_model == m_clean
+                        and (
+                            row_col_code in c_clean
+                            or row_col_name in c_clean
+                            or row_full_col in c_clean
+                        )
+                    ):
+                        # color 시트 E열 = ECOUNT 품목코드
                         if len(r) > 4 and pd.notna(r.iloc[4]):
                             prod_cd = str(r.iloc[4]).strip()
-                            break
-            except:
+
+                        break
+
+            except Exception:
                 pass
 
             details.append({
                 "LineNo": idx + 1,
                 "ProdCd": str(prod_cd),
-                "ProdDes": str(item['컬러']),
-                "Qty": float(item['수량']),
-                "Price": float(item['단가']),
-                "SupplyAmt": float(item['금액']),
+                "ProdDes": str(item["컬러"]),
+                "Qty": float(item["수량"]),
+                "Price": float(item["단가"]),
+                "SupplyAmt": float(item["금액"]),
                 "Remarks": str(memo)
             })
-            
+
+        # 5단계: ECOUNT 주문 데이터 구성
         order_payload = {
             "SESSION_ID": session_id,
             "Remote_IP": "",
@@ -135,21 +187,56 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors, df_clients):
                 "Details": details
             }
         }
-        
-        # 💡 정돈된 URL 엔드포인트 호출
-        order_url = f"{base_url}/OAPI/V2/Sale/SaveSalesOrder?SESSION_ID={session_id}"
+
+        # 6단계: ECOUNT 판매주문서 입력
+        # ECOUNT 공식 Request URL
+        order_url = (
+            f"https://oapi{zone}.ecount.com"
+            f"/OAPI/V2/SaleOrder/SaveSaleOrder"
+            f"?SESSION_ID={session_id}"
+        )
+
         order_res = requests.post(
             order_url,
             json=order_payload,
             timeout=10
         )
-        order_data = order_res.json()
-        
-        if str(order_data.get("Status")) == "200" or str(order_data.get("Code")) == "200" or not order_data.get("Errors"):
-            return True
-        else:
-            st.error(f"❌ 이카운트 거부 사유: {order_data.get('Errors') or order_data.get('Message') or order_data}")
+
+        # JSON 응답 확인
+        try:
+            order_data = order_res.json()
+        except Exception:
+            st.error(
+                f"❌ 이카운트 응답 해석 실패 "
+                f"(HTTP {order_res.status_code}): "
+                f"{order_res.text}"
+            )
             return False
+
+        # 성공 여부 확인
+        if (
+            str(order_data.get("Status")) == "200"
+            or str(order_data.get("Code")) == "200"
+        ):
+            return True
+
+        # ECOUNT가 Errors를 빈 값으로 반환하는 경우도 고려
+        if (
+            not order_data.get("Errors")
+            and order_data.get("Data")
+            and str(order_data.get("Status", "")) == "200"
+        ):
+            return True
+
+        st.error(
+            f"❌ 이카운트 거부 사유: "
+            f"{order_data.get('Errors') "
+            f"or order_data.get('Message') "
+            f"or order_data}"
+        )
+
+        return False
+
     except Exception as e:
         st.error(f"❌ 이카운트 통신 에러: {str(e)}")
         return False
