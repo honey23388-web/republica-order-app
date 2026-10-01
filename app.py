@@ -228,15 +228,14 @@ def send_order_to_ecount(cart_items, client_name, memo, df_colors, df_clients):
         ):
             return True
 
-        st.error(
-            f"❌ 이카운트 거부 사유: "
-            f"{order_data.get('Errors') "
-            f"or order_data.get('Message') "
-            f"or order_data}"
-        )
+error_message = (
+    order_data.get("Errors")
+    or order_data.get("Message")
+    or order_data
+)
 
-        return False
-
+st.error(f"❌ 이카운트 거부 사유: {error_message}")
+return False
     except Exception as e:
         st.error(f"❌ 이카운트 통신 에러: {str(e)}")
         return False
